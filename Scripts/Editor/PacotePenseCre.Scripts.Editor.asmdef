@@ -1,0 +1,20 @@
+{
+    "name": "PacotePenseCre.Scripts.Editor",
+    "references": [
+        "GUID:1e78b986c2da54f47af76e781e1ab6b0",
+        "GUID:6490ce9fa53d92d439cd2a78f8861fd8",
+        "GUID:fcc10d22f4815d44e916b197772b6201",
+        "GUID:8dac7efbf9bc2704bb70c1f1d1546dae"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
