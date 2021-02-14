@@ -56,7 +56,7 @@ namespace PacotePenseCre.Core
                 Debug.Log(ApplicationManager.proj.ToString());
                 decryptFileContents = EncryptionUtility.DecryptString(fileContents, Key);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return false;
             }

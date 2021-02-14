@@ -17,7 +17,10 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
             // Standalone Player Settings 
             PlayerSettings.captureSingleScreen = false;
+#if UNITY_2019_1_OR_NEWER
+#else
             PlayerSettings.displayResolutionDialog = ResolutionDialogSetting.Disabled;
+#endif
             PlayerSettings.usePlayerLog = false;
             PlayerSettings.resizableWindow = false;
             PlayerSettings.visibleInBackground = true;
