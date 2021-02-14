@@ -11,8 +11,11 @@ namespace PacotePenseCre.Editor.BuildPipeline
             SetIcons();
 
             // Resolution Settings 
-            //PlayerSettings.defaultIsFullScreen = true;
+#if UNITY_2018_1_OR_NEWER
             PlayerSettings.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
+#else
+            PlayerSettings.defaultIsFullScreen = true;
+#endif
             PlayerSettings.runInBackground = true;
 
             // Standalone Player Settings 
