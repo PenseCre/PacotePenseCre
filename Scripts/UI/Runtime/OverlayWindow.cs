@@ -1,4 +1,4 @@
-namespace PacotePenseCre.Scripts.UI
+namespace PacotePenseCre.UI
 {
     /// <summary>
     /// CameraOverlay

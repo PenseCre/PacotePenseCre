@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PacotePenseCre.Scripts.Extensions
+namespace PacotePenseCre.Extensions
 {
     public static class StringExtensions
     {

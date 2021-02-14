@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PacotePenseCre.Scripts.Utility
+namespace PacotePenseCre.Utility
 {
     /// <summary>
     ///     Static class providing utilities with hardware and OS information for authentication.

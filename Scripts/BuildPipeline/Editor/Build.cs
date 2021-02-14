@@ -7,8 +7,9 @@ using Debug = UnityEngine.Debug;
 
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using PacotePenseCre.BuildPipeline;
 
-namespace PacotePenseCre.Scripts.Editor.BuildPipeline
+namespace PacotePenseCre.Editor.BuildPipeline
 {
     public class Build : MonoBehaviour
     {

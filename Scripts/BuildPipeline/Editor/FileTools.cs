@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace PacotePenseCre.Scripts.Editor.BuildPipeline
+namespace PacotePenseCre.Editor.BuildPipeline
 {
     public static class FileTools
     {

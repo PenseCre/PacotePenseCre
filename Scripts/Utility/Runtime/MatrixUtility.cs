@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace PacotePenseCre.Scripts.Utility
+namespace PacotePenseCre.Utility
 {
     public class MatrixUtility
     {

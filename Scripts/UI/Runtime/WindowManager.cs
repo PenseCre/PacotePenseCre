@@ -1,8 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PacotePenseCre.Generics;
 
-namespace PacotePenseCre.Scripts.UI
+namespace PacotePenseCre.UI
 {
     public class WindowManager : Singleton<WindowManager>
     {

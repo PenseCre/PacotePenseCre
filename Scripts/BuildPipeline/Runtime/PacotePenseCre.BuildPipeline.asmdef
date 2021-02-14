@@ -1,0 +1,17 @@
+{
+    "name": "PacotePenseCre.BuildPipeline",
+    "references": [
+        "GUID:6490ce9fa53d92d439cd2a78f8861fd8"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

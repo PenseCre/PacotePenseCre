@@ -1,12 +1,14 @@
-using PacotePenseCre.Scripts.Configuration;
-using PacotePenseCre.Scripts.Utility;
-using PacotePenseCre.Scripts.Input;
 using UnityEngine;
-
 using System.Linq;
 using System.Reflection;
 
-namespace PacotePenseCre.Scripts.Core
+using PacotePenseCre;
+using PacotePenseCre.Configuration;
+using PacotePenseCre.Utility;
+using PacotePenseCre.Input;
+using PacotePenseCre.Generics;
+
+namespace PacotePenseCre.Core
 {
     public class ApplicationManager : Singleton<ApplicationManager>
     {
@@ -77,12 +79,18 @@ namespace PacotePenseCre.Scripts.Core
             // The way contexts work prevent an external package like this from accessing the application scripts
             var subclassTypes = callingAssembly.GetTypes().Where(t => t.IsSubclassOf(typeof(ConfigurationManager)));
 
-            foreach (System.Type t in subclassTypes)
+            if (subclassTypes != null && subclassTypes.Count() > 0)
             {
-                Debug.Log(string.Format("{0}{1} component instanced in runtime", callingFrom, t.Name));
-                go.AddComponent(t);
+                foreach (System.Type t in subclassTypes)
+                {
+                    Debug.Log(string.Format("{0}{1} component instanced in runtime", callingFrom, t.Name));
+                    go.AddComponent(t);
+                }
             }
-
+            else
+            {
+                Debug.Log(string.Format("{0} could not find any ConfigurationManager in project", callingFrom));
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 using UnityEngine;
-using PacotePenseCre.Scripts.Utility;
+using PacotePenseCre.Utility;
 
-namespace PacotePenseCre.Scripts.UI
+namespace PacotePenseCre.UI
 {
     [RequireComponent(typeof (CanvasGroup))]
     [System.Serializable]

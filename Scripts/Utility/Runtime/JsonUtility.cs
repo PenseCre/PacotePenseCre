@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace PacotePenseCre.Scripts.Utility
+namespace PacotePenseCre.Utility
 {
     /// <summary>
     /// Class for handling Json Operations

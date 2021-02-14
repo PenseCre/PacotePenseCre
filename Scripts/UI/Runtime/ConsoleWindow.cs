@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using PacotePenseCre.Scripts;
-using PacotePenseCre.Scripts.Utility;
+using PacotePenseCre.BuildPipeline;
 
-namespace PacotePenseCre.Scripts.UI
+namespace PacotePenseCre.UI
 {
     public class ConsoleWindow : UIScreen
     {

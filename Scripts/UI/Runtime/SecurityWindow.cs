@@ -1,10 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using PacotePenseCre.Scripts.UI;
-//using PacotePenseCre.Scripts.Core;
-using UnityEngine;
-
-namespace PacotePenseCre.Scripts.UI
+﻿namespace PacotePenseCre.UI
 {
     public class SecurityWindow : UIScreen
     {

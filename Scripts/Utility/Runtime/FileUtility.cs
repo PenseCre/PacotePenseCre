@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using UnityEngine;
 
-namespace PacotePenseCre.Scripts.Utility
+namespace PacotePenseCre.Utility
 {
     /// <summary>
     /// Class to handle file operations

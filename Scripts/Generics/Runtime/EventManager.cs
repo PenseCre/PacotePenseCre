@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PacotePenseCre.Scripts.Generics
+namespace PacotePenseCre.Generics
 {
     public abstract class AppEvent
     {

@@ -1,22 +1,24 @@
 using UnityEngine;
 
-namespace PacotePenseCre.Scripts.Configuration
+namespace PacotePenseCre.Configuration
 {
     /// <summary>
-    /// 
+    /// Set of parameters per project following the structure of our proposals presentation
     /// </summary>
-    public class CalibrationConfiguration
+    public class Configuration
     {
-        public string Type;
+        public string Idea;
+        public string Format;
+        public string[] Functionalities;
+        public string[] Interactions;
+        
+        public string Name;
         public string Description;
-              
+
         public float ScreenWidth;
         public float ScreenHeight;
         public float DistanceFromGround;
 
-        public Vector3 KinectPosition;
-        public Vector3 KinectRotation;
-
-        public float KinectDepth;
+        //public Sensor[] Sensors;
     }
 }

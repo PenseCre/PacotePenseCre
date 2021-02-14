@@ -1,18 +1,19 @@
 using UnityEngine;
-using PacotePenseCre.Scripts.Utility;
-using JsonUtility = PacotePenseCre.Scripts.Utility.JsonUtility;
+using PacotePenseCre.Utility;
+using PacotePenseCre.Generics;
+using JsonUtility = PacotePenseCre.Utility.JsonUtility;
 
-namespace PacotePenseCre.Scripts.Configuration
+namespace PacotePenseCre.Configuration
 {
     /// <summary>
     /// ConfigurationManager - Loads config file(Json) and converts it to class 
     /// </summary>
     public class ConfigurationManager : Singleton<ConfigurationManager>
     {
-        public CalibrationConfiguration calibrationConfiguration;
+        public Configuration penseCreConfiguration;
 
-        private const string _calibrationConfigFile = "/CalibrationConfig.json";
-        private const string _calibrationConfigPath = "/../Config/";
+        protected readonly string _penseCreConfigFile = "/PenseCreConfig.json";
+        protected readonly string _penseCreConfigPath = "/../Config/";
 
         void Awake()
         {
@@ -21,12 +22,12 @@ namespace PacotePenseCre.Scripts.Configuration
 
         private void LoadAllConfigurationFiles()
         {
-            calibrationConfiguration = JsonUtility.ConvertJsonToObject<CalibrationConfiguration>(LoadConfigurationFile(_calibrationConfigPath, _calibrationConfigFile));
+            penseCreConfiguration = JsonUtility.ConvertJsonToObject<Configuration>(LoadConfigurationFile(_penseCreConfigPath, _penseCreConfigFile));
             Debug.Log("[ConfigurationManager] - Loaded All Configuration Files");
-        }   
+        }
 
         /// <summary>
-        /// LoadConfiguration - 
+        /// Read the content of the configuration file into a string 
         /// </summary>
         public string LoadConfigurationFile(string filePath, string fileName)
         {

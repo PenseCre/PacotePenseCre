@@ -2,7 +2,7 @@ using UnityEngine;
 
 using UnityEditor;
 
-namespace PacotePenseCre.Scripts.Editor.BuildPipeline
+namespace PacotePenseCre.Editor.BuildPipeline
 {
     public abstract class WindowsPlayerSettings
     {

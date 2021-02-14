@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-namespace PacotePenseCre.Scripts.Utility
+namespace PacotePenseCre.Utility
 {
     /// <summary>
     /// Class to handle Animation Coroutines

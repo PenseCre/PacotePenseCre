@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-namespace PacotePenseCre.Scripts.Input
+namespace PacotePenseCre.Input
 {
     using Input = UnityEngine.Input;
     public class Shortcuts : MonoBehaviour

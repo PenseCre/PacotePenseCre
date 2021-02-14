@@ -1,18 +1,18 @@
 using System;
 using System.Collections;
-//using PacotePenseCre.Scripts.Helpers;
-using PacotePenseCre.Scripts.Extensions;
-using PacotePenseCre.Scripts.Utility;
-using PacotePenseCre.Scripts.UI;
+//using PacotePenseCre.Helpers;
+using PacotePenseCre.Extensions;
+using PacotePenseCre.Utility;
+using PacotePenseCre.UI;
 using Newtonsoft.Json;
 using UnityEngine;
 
-namespace PacotePenseCre.Scripts.Core
+namespace PacotePenseCre.Core
 {
     public class SecurityManager : MonoBehaviour
     {
         #region private variables
-        private const string Key = "tvZ#y$7(rKPG4u-#{93/Q:MUHT(n(K";
+        protected readonly string Key = "tvZ#y$7(rKPG4u-#{93/Q:MUHT(n(K";
 
         private const string SecurityFilePath = "Config";
         private const string SecurityFileName = "akn.xdon";

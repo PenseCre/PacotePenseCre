@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
-namespace PacotePenseCre.Scripts.Utility
+namespace PacotePenseCre.Utility
 {
     /// <summary>
     ///     Singleton class providing networks utilities to get MAC and Ip addresses, to check if internet is active, etc.

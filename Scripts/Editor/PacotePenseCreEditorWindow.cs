@@ -2,15 +2,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using PacotePenseCre.Scripts.Core;
-using PacotePenseCre.Scripts.Utility;
-using PacotePenseCre.Scripts.Editor.BuildPipeline;
+using PacotePenseCre;
+using PacotePenseCre.Utility;
+using PacotePenseCre.BuildPipeline;
+using PacotePenseCre.Editor.BuildPipeline;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
-using JsonUtility = PacotePenseCre.Scripts.Utility.JsonUtility;
+using JsonUtility = PacotePenseCre.Utility.JsonUtility;
 
-namespace PacotePenseCre.Scripts.Editor
+namespace PacotePenseCre.Editor
 {
     class PacotePenseCreEditorWindow : EditorWindow
     {
