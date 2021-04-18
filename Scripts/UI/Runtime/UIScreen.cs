@@ -16,7 +16,6 @@ namespace PacotePenseCre.UI
         {
             // self registering 
             WindowManager.Instance.RegisterWindow(this);
-
             _canvasGroup = GetComponent<CanvasGroup>();
             isVisible = false;
             HideScreen(false);

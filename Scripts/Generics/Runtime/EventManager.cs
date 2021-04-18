@@ -8,7 +8,11 @@ namespace PacotePenseCre.Generics
         public string EventName { get; set; }
     }
 
-    public class EventManager : Singleton<EventManager>
+    /// <summary>
+    /// TODO: integrate this https://learn.unity.com/tutorial/create-a-simple-messaging-system-with-events?signup=true
+    /// or find out how to use current manager and add documentation with examples
+    /// </summary>
+    public class EventManager : Manager
     {
         #region public variables
 

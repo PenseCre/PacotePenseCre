@@ -8,7 +8,7 @@ namespace PacotePenseCre.Configuration
     /// <summary>
     /// ConfigurationManager - Loads config file(Json) and converts it to class 
     /// </summary>
-    public class ConfigurationManager : Singleton<ConfigurationManager>
+    public class ConfigurationManager : Manager
     {
         public Configuration penseCreConfiguration;
 

@@ -1,15 +1,16 @@
 using System;
 using System.Collections;
-//using PacotePenseCre.Helpers;
 using PacotePenseCre.Extensions;
 using PacotePenseCre.Utility;
 using PacotePenseCre.UI;
-using Newtonsoft.Json;
+//using PacotePenseCre.Helpers;
+using PacotePenseCre.Generics;
+//using Newtonsoft.Json;
 using UnityEngine;
 
 namespace PacotePenseCre.Core
 {
-    public class SecurityManager : MonoBehaviour
+    public class SecurityManager : Manager
     {
         #region private variables
         protected readonly string Key = "tvZ#y$7(rKPG4u-#{93/Q:MUHT(n(K";

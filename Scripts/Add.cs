@@ -1,4 +1,5 @@
-﻿/// <summary>
+﻿using System.Reflection;
+/// <summary>
 /// Base namespace used as a shortcut or factory, to add project dependencies.
 /// </summary>
 namespace PacotePenseCre
@@ -10,7 +11,8 @@ namespace PacotePenseCre
         /// </summary>
         public static void Core()
         {
-            PacotePenseCre.Core.ApplicationManager.AddProjectDependencies_Static();
+            var proj = Assembly.GetCallingAssembly();
+            PacotePenseCre.Core.ApplicationManager.AddProjectDependencies_Static(proj);
         }
     }
 }

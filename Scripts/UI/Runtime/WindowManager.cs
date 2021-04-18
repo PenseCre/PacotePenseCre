@@ -5,9 +5,31 @@ using PacotePenseCre.Generics;
 
 namespace PacotePenseCre.UI
 {
-    public class WindowManager : Singleton<WindowManager>
+    public class WindowManager : Manager
     {
         private Dictionary<string, UIScreen> _registeredWindows = new Dictionary<string, UIScreen>();
+        
+        public static WindowManager Instance
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    if (!registry.ContainsKey(typeof(WindowManager)))
+                    {
+                        var found = FindObjectOfType<WindowManager>();
+                        if(found != null)
+                        {
+                            registry.Add(found.GetType(), found);
+                            return found;
+                        }
+                        var ret = new GameObject(typeof(WindowManager).Name).AddComponent<WindowManager>();
+                        return ret;
+                    }
+                    return (WindowManager)registry[typeof(WindowManager)];
+                }
+            }
+        }
 
         public void RegisterWindow(UIScreen window)
         {
