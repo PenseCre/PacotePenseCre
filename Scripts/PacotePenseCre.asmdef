@@ -1,26 +1,11 @@
 {
     "name": "PacotePenseCre",
+    "rootNamespace": "",
     "references": [
         "GUID:fcc10d22f4815d44e916b197772b6201",
         "GUID:6ee311db3e296b74c873c7602916d2f0"
     ],
-    "includePlatforms": [
-        "Android",
-        "Editor",
-        "iOS",
-        "LinuxStandalone64",
-        "Lumin",
-        "macOSStandalone",
-        "PS4",
-        "Stadia",
-        "Switch",
-        "tvOS",
-        "WSA",
-        "WebGL",
-        "WindowsStandalone32",
-        "WindowsStandalone64",
-        "XboxOne"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

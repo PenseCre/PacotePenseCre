@@ -1,7 +1,9 @@
 using UnityEngine;
 using System;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Reflection;
 using Debug = UnityEngine.Debug;
 
@@ -30,6 +32,33 @@ namespace PacotePenseCre.Editor.BuildPipeline
             Debug.Log(string.Format("[BUILD] [{0}] Completed @ {1:MM/dd/yy hh:mm:ss}.", target.ToString(), DateTime.Now));
 
             callback();
+        }
+
+        public static void Zip(string[] buildScenes, BuildInfo buildInfo, BuildTarget target)
+        {
+            if (buildInfo.OneBuildPerScene)
+            {
+                for (int i = 0; i < buildScenes.Length; i++)
+                {
+                    string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
+                    string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
+                    string zipFileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".zip";
+                    string destinationArchiveFileName = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, zipFileName);
+                    Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationArchiveFileName));
+
+                    ZipFile.CreateFromDirectory(buildLocation, destinationArchiveFileName);
+                }
+            }
+            else
+            {
+                string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
+                string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
+                string zipFileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".zip";
+                string destinationArchiveFileName = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, zipFileName);
+                Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationArchiveFileName));
+
+                ZipFile.CreateFromDirectory(buildLocation, destinationArchiveFileName);
+            }
         }
 
         private static string GetBuildDirectory(BuildTarget target, string sceneName, bool isRelease)

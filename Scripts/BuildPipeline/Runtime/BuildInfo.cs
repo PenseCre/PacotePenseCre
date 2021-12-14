@@ -16,6 +16,7 @@
         public string BuildDateTime;
 
         public bool Release;
+        public bool OneBuildPerScene;
 
         public static BuildInfo DefaultValues = new BuildInfo
         {
@@ -27,7 +28,16 @@
             BuildVersion = 0,
             BuildNotes = "-",
             BuildDateTime = "",
-            Release = false
+            Release = false,
+            OneBuildPerScene = false
         };
+
+        public string GetVersionName
+        {
+            get
+            {
+                return MajorVersion + "." + MinorVersion + "." + PatchVersion + "." + BuildVersion;
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 {
     "name": "PacotePenseCre.Core",
+    "rootNamespace": "",
     "references": [
         "GUID:f595217a6022115409ee8243fbdcdb30",
         "GUID:530419d2cf8447348bed67c91957c2c6",
@@ -8,23 +9,7 @@
         "GUID:61226b45edbb4b842bee8df61d735c60",
         "GUID:a30220a0f7c8df34bab5b05914134bc3"
     ],
-    "includePlatforms": [
-        "Android",
-        "Editor",
-        "iOS",
-        "LinuxStandalone64",
-        "Lumin",
-        "macOSStandalone",
-        "PS4",
-        "Stadia",
-        "Switch",
-        "tvOS",
-        "WSA",
-        "WebGL",
-        "WindowsStandalone32",
-        "WindowsStandalone64",
-        "XboxOne"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

@@ -33,6 +33,11 @@ namespace PacotePenseCre.Utility
             {
                 File.WriteAllText(filePath, content);
             }
+            catch (DirectoryNotFoundException e)
+            {
+                Debug.Log(e);
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            }
             catch (Exception e)
             {
                 Debug.Log(e);

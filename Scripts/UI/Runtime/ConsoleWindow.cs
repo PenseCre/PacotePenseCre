@@ -55,6 +55,10 @@ namespace PacotePenseCre.UI
                     ShowScreen();
                 }
             }
+            if (Input.GetKeyUp(KeyCode.M))
+            {
+                Cursor.visible = !Cursor.visible;
+            }
         }
 
         void OnGui()

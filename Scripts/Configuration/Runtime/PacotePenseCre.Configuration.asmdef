@@ -1,26 +1,11 @@
 {
     "name": "PacotePenseCre.Configuration",
+    "rootNamespace": "",
     "references": [
         "GUID:6490ce9fa53d92d439cd2a78f8861fd8",
         "GUID:6ee311db3e296b74c873c7602916d2f0"
     ],
-    "includePlatforms": [
-        "Android",
-        "Editor",
-        "iOS",
-        "LinuxStandalone64",
-        "Lumin",
-        "macOSStandalone",
-        "PS4",
-        "Stadia",
-        "Switch",
-        "tvOS",
-        "WSA",
-        "WebGL",
-        "WindowsStandalone32",
-        "WindowsStandalone64",
-        "XboxOne"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

@@ -17,10 +17,10 @@ namespace PacotePenseCre.Editor
     {
         #region Custom Editor Window Code
 
-        [MenuItem("Window/PenseCre")]
+        [MenuItem("File/Build with PenseCre")]
         public static void ShowWindow()
         {
-            EditorWindow.GetWindow<PacotePenseCreEditorWindow>("PenseCre Editor Window");
+            EditorWindow.GetWindow<PacotePenseCreEditorWindow>("PenseCre Build Window");
         }
 
         #endregion
@@ -100,6 +100,9 @@ namespace PacotePenseCre.Editor
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(20);
+            EditorGUILayout.LabelField("One build per scene", GUILayout.Width(120));
+            _buildInfo.OneBuildPerScene = EditorGUILayout.Toggle(_buildInfo.OneBuildPerScene);
+
             EditorGUILayout.LabelField("Scenes", GUILayout.Width(120));
 
             EditorGUILayout.BeginVertical();
@@ -157,19 +160,41 @@ namespace PacotePenseCre.Editor
 
             string[] buildScenes = new string[scenes.Count];
 
-            for (int i = 0; i < scenes.Count; i++)
+            if (_buildInfo.OneBuildPerScene)
+            {
+                for (int i = 0; i < scenes.Count; i++)
+                {
+                    _buildingScene = true;
+                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
+
+                    CheckForDefaults();
+                    WriteBuildInfo(release);
+                    BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
+                    Build.RunBuild(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+
+                    yield return new WaitUntil(() => !_buildingScene);
+
+                    yield return new WaitForSeconds(1);
+                    Build.Zip(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64);
+                }
+            }
+            else
             {
                 _buildingScene = true;
-                buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
-
+                for (int i = 0; i < scenes.Count; i++)
+                {
+                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
+                }
                 CheckForDefaults();
                 WriteBuildInfo(release);
                 BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                Build.RunBuild(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                Build.RunBuild(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
 
                 yield return new WaitUntil(() => !_buildingScene);
-            }
 
+                yield return new WaitForSeconds(1);
+                Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64);
+            }
             _building = false;
         }
 

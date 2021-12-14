@@ -1,11 +1,10 @@
 {
     "name": "PacotePenseCre.BuildPipeline",
+    "rootNamespace": "",
     "references": [
         "GUID:6490ce9fa53d92d439cd2a78f8861fd8"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

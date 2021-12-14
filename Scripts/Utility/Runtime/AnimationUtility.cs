@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Events;
 
 namespace PacotePenseCre.Utility
 {
@@ -8,7 +9,7 @@ namespace PacotePenseCre.Utility
     /// </summary>
     public class AnimationUtility
     {
-        public static IEnumerator LerpCanvasAlpha(CanvasGroup obj, float from, float to, float time)
+        public static IEnumerator LerpCanvasAlpha(CanvasGroup obj, float from, float to, float time, UnityAction onComplete = null)
         {
             float step = 0;
             for (float t = 0; t <= 1; t += Time.deltaTime / time)
@@ -20,6 +21,7 @@ namespace PacotePenseCre.Utility
             }
 
             obj.alpha = to;
+            onComplete?.Invoke();
         }
     }
 }

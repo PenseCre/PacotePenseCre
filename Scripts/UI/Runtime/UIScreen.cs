@@ -11,6 +11,8 @@ namespace PacotePenseCre.UI
 
         private CanvasGroup _canvasGroup;
         private float _fadeSpeed = 1.0f;
+        [SerializeField] private bool _toggleBlockRaycasts = true;
+        [SerializeField] private bool _hideCursor = true;
 
         void Awake()
         {
@@ -26,13 +28,17 @@ namespace PacotePenseCre.UI
             if (!animate)
             {
                 _canvasGroup.alpha = 1;
+                _canvasGroup.blocksRaycasts = true;
             }
             else
             {
-                StartCoroutine(AnimationUtility.LerpCanvasAlpha(_canvasGroup, 0, 1, _fadeSpeed));
+                StartCoroutine(AnimationUtility.LerpCanvasAlpha(_canvasGroup, 0, 1, _fadeSpeed, () => MakeScreenBlockRaycasts(true)));
             }
 
-            Cursor.visible = true;
+            if (_hideCursor)
+            {
+                Cursor.visible = true;
+            }
             isVisible = true;
         }
 
@@ -41,14 +47,24 @@ namespace PacotePenseCre.UI
             if (!animate)
             {
                 _canvasGroup.alpha = 0;
+                _canvasGroup.blocksRaycasts = false;
             }
             else
             {
-                StartCoroutine(AnimationUtility.LerpCanvasAlpha(_canvasGroup, 1, 0, _fadeSpeed));
+                StartCoroutine(AnimationUtility.LerpCanvasAlpha(_canvasGroup, 1, 0, _fadeSpeed, () => MakeScreenBlockRaycasts(false)));
             }
 
-            Cursor.visible = false;
+            if (_hideCursor)
+            {
+                Cursor.visible = false;
+            }
             isVisible = false;
+        }
+
+        public void MakeScreenBlockRaycasts(bool blockRaycasts)
+        {
+            if (!_toggleBlockRaycasts) return;
+            _canvasGroup.blocksRaycasts = blockRaycasts;
         }
     }
 }
