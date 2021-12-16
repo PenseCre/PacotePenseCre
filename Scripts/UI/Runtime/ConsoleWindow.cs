@@ -61,7 +61,7 @@ namespace PacotePenseCre.UI
             }
         }
 
-        void OnGui()
+        void OnGUI()
         {
             if (!isVisible) return;
 

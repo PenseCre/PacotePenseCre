@@ -10,8 +10,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
         protected void SetCommonSettings(string applicationName, string companyName)
         {
-            PlayerSettings.companyName = applicationName;
-            PlayerSettings.productName = companyName;
+            PlayerSettings.companyName = companyName;
+            PlayerSettings.productName = applicationName;
 
             //PlayerSettings.d3d9FullscreenMode = D3D9FullscreenMode.FullscreenWindow;
             //PlayerSettings.d3d11FullscreenMode = D3D11FullscreenMode.FullscreenWindow;

@@ -53,7 +53,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string zipFileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".zip";
+                string zipFileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
                 string destinationArchiveFileName = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, zipFileName);
                 Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationArchiveFileName));
 
