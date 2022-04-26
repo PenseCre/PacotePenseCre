@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -5,35 +7,30 @@ namespace PacotePenseCre.Editor.BuildPipeline
 {
     public class DebugPlayerSettings : WindowsPlayerSettings
     {
-        public override void ApplySettings(string applicationName, string companyName)
+        protected new readonly Dictionary<string, object> defaultSettings = new Dictionary<string, object>()
         {
-            SetCommonSettings(applicationName, companyName);
+            { "runInBackground", true }
+            ,{ "visibleInBackground", true }
+            ,{ "usePlayerLog", true }
+            ,{ "forceSingleInstance", false }
+            ,{ "captureSingleScreen", false }
+#if !UNITY_2019_1_OR_NEWER
+            ,{ "displayResolutionDialog", ResolutionDialogSetting.Enabled }
+#endif
+        };
+
+        public override void ApplySettings(string applicationName, string companyName, Dictionary<string, object> buildSettings = null)
+        {
+            SetName(applicationName, companyName);
             SetIcons();
+            //SetDisplay();
 
-            // Resolution Settings Panel
-#if UNITY_2018_1_OR_NEWER
-            PlayerSettings.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
-#else
-            PlayerSettings.defaultIsFullScreen = true;
-#endif
-
-            PlayerSettings.runInBackground = true;
-
-            // Standalone Player Settings Panel
-            PlayerSettings.captureSingleScreen = false;
-#if UNITY_2019_1_OR_NEWER
-#else
-            PlayerSettings.displayResolutionDialog = ResolutionDialogSetting.Enabled;
-#endif
-            PlayerSettings.usePlayerLog = true;
-            PlayerSettings.resizableWindow = false;
-            PlayerSettings.visibleInBackground = false;
-            PlayerSettings.resizableWindow = false;
-            PlayerSettings.forceSingleInstance = false;
+            if (buildSettings == null) buildSettings = defaultSettings;
+            SetBuildSettings(buildSettings);
 
             //Splash 
             PlayerSettings.SplashScreen.show = true;
-
+            PlayerSettings.SplashScreen.showUnityLogo = true;
         }
     }
 }

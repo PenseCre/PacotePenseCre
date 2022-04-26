@@ -9,12 +9,12 @@ namespace PacotePenseCre.Utility
     {
         public static T ConvertJsonToObject<T>(string txt)
         {
-            return JsonConvert.DeserializeObject<T>(txt);
+            return JsonConvert.DeserializeObject<T>(txt, new JsonSerializerSettings() { Formatting = Formatting.Indented });
         }
 
         public static string ConvertToJson(object obj, Formatting formatting = Formatting.None)
         {
-            return JsonConvert.SerializeObject(obj);
+            return JsonConvert.SerializeObject(obj, formatting);
         }
     }
 }

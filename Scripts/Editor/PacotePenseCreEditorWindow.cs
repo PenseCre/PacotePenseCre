@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 using JsonUtility = PacotePenseCre.Utility.JsonUtility;
+using System.Linq;
 
 namespace PacotePenseCre.Editor
 {
@@ -27,9 +28,9 @@ namespace PacotePenseCre.Editor
 
         #region Properties
 
-        private BuildInfo _buildInfo;
-
         public List<SceneSelection> scenes = new List<SceneSelection>();
+        public BuildInfo _buildInfo;
+        public BuildConfig _buildConfig;
 
         private string[] _sceneOptions;
         private bool populatedOptions;
@@ -43,7 +44,11 @@ namespace PacotePenseCre.Editor
         {
             if (_buildInfo == null)
             {
-                LoadBuildData();
+                LoadBuildData<BuildInfo>();
+            }
+            if(_buildConfig == null)
+            {
+                LoadBuildDataSO<BuildConfig>();
             }
 
             if (!populatedOptions)
@@ -57,6 +62,12 @@ namespace PacotePenseCre.Editor
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("BuildInfo not found", GUILayout.Width(120));
+                return;
+            }
+            if(_buildConfig == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("BuildConfig not found", GUILayout.Width(120));
                 return;
             }
 
@@ -100,8 +111,23 @@ namespace PacotePenseCre.Editor
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(20);
+            
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("One build per scene", GUILayout.Width(120));
-            _buildInfo.OneBuildPerScene = EditorGUILayout.Toggle(_buildInfo.OneBuildPerScene);
+            _buildConfig.OneBuildPerScene = EditorGUILayout.Toggle(_buildConfig.OneBuildPerScene);
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Archive to Zip", GUILayout.Width(120));
+            _buildConfig.ArchiveToZip = EditorGUILayout.Toggle(_buildConfig.ArchiveToZip);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Make Installer", GUILayout.Width(120));
+            _buildConfig.MakeInstaller = EditorGUILayout.Toggle(_buildConfig.MakeInstaller);
+            EditorGUILayout.EndHorizontal();
+            
+            GUILayout.Space(20);
 
             EditorGUILayout.LabelField("Scenes", GUILayout.Width(120));
 
@@ -160,7 +186,7 @@ namespace PacotePenseCre.Editor
 
             string[] buildScenes = new string[scenes.Count];
 
-            if (_buildInfo.OneBuildPerScene)
+            if (_buildConfig.OneBuildPerScene)
             {
                 for (int i = 0; i < scenes.Count; i++)
                 {
@@ -175,7 +201,7 @@ namespace PacotePenseCre.Editor
                     yield return new WaitUntil(() => !_buildingScene);
 
                     yield return new WaitForSeconds(1);
-                    Build.Zip(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64);
+                    Build.Zip(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
                 }
             }
             else
@@ -193,14 +219,15 @@ namespace PacotePenseCre.Editor
                 yield return new WaitUntil(() => !_buildingScene);
 
                 yield return new WaitForSeconds(1);
-                Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64);
+                Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
             }
             _building = false;
         }
 
         private void BuildSceneCompleted()
         {
-            LoadBuildData();
+            LoadBuildData<BuildInfo>();
+            LoadBuildDataSO<BuildConfig>();
             _buildingScene = true;
         }
 
@@ -221,18 +248,55 @@ namespace PacotePenseCre.Editor
 
             _buildInfo = currentBuildInfo;
 
-            FileUtility.WriteFile(Application.streamingAssetsPath + "/" + BuildInfoManager.fileName, JsonUtility.ConvertToJson(currentBuildInfo, Formatting.Indented));
+            FileUtility.WriteFile(BuildInfoManager.GetFullFilePath<BuildInfo>(), JsonUtility.ConvertToJson(currentBuildInfo, Formatting.Indented));
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
         }
 
-        void LoadBuildData()
+        void LoadBuildData<T>() where T : BuildData
         {
-            if (!FileUtility.CheckFileExists(Application.streamingAssetsPath + "/" + BuildInfoManager.fileName))
+            string fullFilePath = BuildInfoManager.GetFullFilePath<T>();
+            if (!FileUtility.CheckFileExists(fullFilePath))
             {
-                FileUtility.WriteFile(Application.streamingAssetsPath + "/" + BuildInfoManager.fileName, JsonUtility.ConvertToJson(BuildInfo.DefaultValues, Formatting.Indented));
+                var defaultValues = BuildInfoManager.GetDefaultValues<T>();
+                FileUtility.WriteFile(fullFilePath, JsonUtility.ConvertToJson(defaultValues, Formatting.Indented));
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             }
-            _buildInfo = JsonUtility.ConvertJsonToObject<BuildInfo>(FileUtility.ReadFile(Application.streamingAssetsPath + "/" + BuildInfoManager.fileName));
+
+            // first field of matching type passed to this function that is in this class
+            var myFieldWithMatchingType = this.GetType().GetFields().FirstOrDefault(x => x.FieldType == typeof(T));
+            if(myFieldWithMatchingType != null)
+            {
+                myFieldWithMatchingType.SetValue(this, JsonUtility.ConvertJsonToObject<T>(FileUtility.ReadFile(fullFilePath)));
+                // this above line is to make this method adapt to further work on this class, and is equivalent to hardcoding the following:
+                //if (typeof(T) == typeof(BuildInfo))
+                //    _buildInfo = JsonUtility.ConvertJsonToObject<BuildInfo>(FileUtility.ReadFile(fullFilePath));
+                //else if (typeof(T) == typeof(BuildConfig))
+                //    _buildConfig = JsonUtility.ConvertJsonToObject<BuildConfig>(FileUtility.ReadFile(fullFilePath));
+            }
+        }
+        void LoadBuildDataSO<T>() where T : BuildDataSO
+        {
+            string fullFilePath = BuildInfoManager.GetSOFullFilePath<T>();
+            string relativeFilePath = BuildInfoManager.GetSOFullFilePath<T>(true);
+            if (!FileUtility.CheckFileExists(fullFilePath))
+            {
+                var defaultValues = BuildInfoManager.GetSODefaultValues<T>();
+                string directory = Path.GetDirectoryName(fullFilePath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                }
+                AssetDatabase.CreateAsset(defaultValues, relativeFilePath);
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            }
+
+            // first field of matching type passed to this function that is in this class
+            var myFieldWithMatchingType = this.GetType().GetFields().FirstOrDefault(x => x.FieldType == typeof(T));
+            if (myFieldWithMatchingType != null)
+            {
+                myFieldWithMatchingType.SetValue(this, AssetDatabase.LoadAssetAtPath<T>(relativeFilePath));
+            }
         }
 
         private void CheckForDefaults()

@@ -1,42 +1,64 @@
 using UnityEngine;
-
 using UnityEditor;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PacotePenseCre.Editor.BuildPipeline
 {
-    public abstract class WindowsPlayerSettings
+    public abstract class WindowsPlayerSettings : PenseCrePlayerSettings
     {
-        public abstract void ApplySettings(string applicationName, string companyName);
+//        /// <summary>
+//        /// Fullscreen Mode, Native Resolution, and Aspect Ratio
+//        /// </summary>
+//        protected void SetDisplay(FullScreenMode fullScreenMode = FullScreenMode.FullScreenWindow, AspectRatio[] acceptedAspectRatios = null, Vector2Int defaultScreenResolution = new Vector2Int(), bool allowFullScreenSwitch = true)
+//        {
+//            // Fullscreen Mode
+//#if UNITY_2018_1_OR_NEWER
+//            PlayerSettings.fullScreenMode = fullScreenMode;
+//#else
+//            PlayerSettings.defaultIsFullScreen = true;
+//#endif
 
-        protected void SetCommonSettings(string applicationName, string companyName)
-        {
-            PlayerSettings.companyName = companyName;
-            PlayerSettings.productName = applicationName;
+//            // Native Resolution
+//            if (defaultScreenResolution != Vector2Int.zero && defaultScreenResolution.x > 16 && defaultScreenResolution.y > 16)
+//            {
+//                PlayerSettings.defaultIsNativeResolution = false;
+//                PlayerSettings.defaultScreenWidth = defaultScreenResolution.x;
+//                PlayerSettings.defaultScreenHeight = defaultScreenResolution.y;
+//#if !UNITY_2019_1_OR_NEWER
+//                PlayerSettings.displayResolutionDialog = ResolutionDialogSetting.Disabled;
+//#endif
+//            }
+//            else
+//            {
+//                PlayerSettings.defaultIsNativeResolution = true;
+//            }
 
-            //PlayerSettings.d3d9FullscreenMode = D3D9FullscreenMode.FullscreenWindow;
-            //PlayerSettings.d3d11FullscreenMode = D3D11FullscreenMode.FullscreenWindow;
-            PlayerSettings.fullScreenMode = FullScreenMode.ExclusiveFullScreen;
+//            // Standalone Player Settings 
+//            PlayerSettings.captureSingleScreen = false;
+//            PlayerSettings.resizableWindow = false;
+//            PlayerSettings.visibleInBackground = true;
 
-            PlayerSettings.SetAspectRatio(AspectRatio.Aspect4by3, true);
-            PlayerSettings.SetAspectRatio(AspectRatio.Aspect5by4, true);
-            PlayerSettings.SetAspectRatio(AspectRatio.Aspect16by9, true);
-            PlayerSettings.SetAspectRatio(AspectRatio.Aspect16by10, true);
-            PlayerSettings.SetAspectRatio(AspectRatio.AspectOthers, true);
-        }
+//            PlayerSettings.allowFullscreenSwitch = allowFullScreenSwitch;
 
-        protected void SetIcons()
-        {
-            Texture2D[] icons = new Texture2D[7];
-
-            icons[0] = Resources.Load("Icons/Icon_1024") as Texture2D;
-            icons[1] = Resources.Load("Icons/Icon_512") as Texture2D;
-            icons[2] = Resources.Load("Icons/Icon_256") as Texture2D;
-            icons[3] = Resources.Load("Icons/Icon_128") as Texture2D;
-            icons[4] = Resources.Load("Icons/Icon_48") as Texture2D;
-            icons[5] = Resources.Load("Icons/Icon_32") as Texture2D;
-            icons[6] = Resources.Load("Icons/Icon_16") as Texture2D;
-
-            PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Standalone, icons);
-        }
+//            // Aspect ratio
+//            if (acceptedAspectRatios != null)
+//            {
+//                PlayerSettings.SetAspectRatio(AspectRatio.AspectOthers, acceptedAspectRatios.Contains(AspectRatio.AspectOthers));
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect4by3, acceptedAspectRatios.Contains(AspectRatio.Aspect4by3));
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect5by4, acceptedAspectRatios.Contains(AspectRatio.Aspect5by4));
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect16by10, acceptedAspectRatios.Contains(AspectRatio.Aspect16by10));
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect16by9, acceptedAspectRatios.Contains(AspectRatio.Aspect16by9));
+//            }
+//            else
+//            {
+//                PlayerSettings.SetAspectRatio(AspectRatio.AspectOthers, true);
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect4by3, true);
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect5by4, true);
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect16by10, true);
+//                PlayerSettings.SetAspectRatio(AspectRatio.Aspect16by9, true);
+//            }
+//        }
     }
 }

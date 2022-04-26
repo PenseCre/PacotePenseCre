@@ -1,8 +1,12 @@
-﻿namespace PacotePenseCre.BuildPipeline
+﻿using System;
+
+namespace PacotePenseCre.BuildPipeline
 {
-    [System.Serializable]
-    public class BuildInfo
+    [Serializable]
+    public class BuildInfo : BuildData
     {
+        public static new readonly string FileName = "buildInfo.json";
+
         public string CompanyName;
         public string ApplicationName;
 
@@ -16,9 +20,8 @@
         public string BuildDateTime;
 
         public bool Release;
-        public bool OneBuildPerScene;
 
-        public static BuildInfo DefaultValues = new BuildInfo
+        public static new BuildInfo DefaultValues = new BuildInfo
         {
             CompanyName = "PenseCre",
             ApplicationName = "Nosso Projeto",
@@ -28,8 +31,7 @@
             BuildVersion = 0,
             BuildNotes = "-",
             BuildDateTime = "",
-            Release = false,
-            OneBuildPerScene = false
+            Release = false
         };
 
         public string GetVersionName

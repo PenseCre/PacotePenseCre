@@ -34,9 +34,11 @@ namespace PacotePenseCre.Editor.BuildPipeline
             callback();
         }
 
-        public static void Zip(string[] buildScenes, BuildInfo buildInfo, BuildTarget target)
+        public static void Zip(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
         {
-            if (buildInfo.OneBuildPerScene)
+            if (!buildConfig.ArchiveToZip) return;
+
+            if (buildConfig.OneBuildPerScene)
             {
                 for (int i = 0; i < buildScenes.Length; i++)
                 {

@@ -33,6 +33,7 @@ namespace PacotePenseCre.UI
                 clearLog.onClick.AddListener(ClearLog);
 
             UpdateBuildInfo(BuildInfoManager.BuildInfo);
+            UpdateBuildConfig(BuildInfoManager.BuildConfig);
         }
 
         void OnDisable()
@@ -82,6 +83,13 @@ namespace PacotePenseCre.UI
                 dateText.text = string.Format("[BUILD_DATE] {0}", buildInfo.BuildDateTime);
             if (noteText)
                 noteText.text = string.Format("[BUILD_NOTES] {0}", buildInfo.BuildNotes);
+        }
+        public void UpdateBuildConfig(BuildConfig buildConfig)
+        {
+            // todo
+            //buildConfig.ArchiveToZip
+            //buildConfig.MakeInstaller
+            //buildConfig.OneBuildPerScene
         }
 
 
