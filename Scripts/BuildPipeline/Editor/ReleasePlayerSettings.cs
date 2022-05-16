@@ -1,3 +1,4 @@
+using PacotePenseCre.BuildPipeline;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,16 +9,16 @@ namespace PacotePenseCre.Editor.BuildPipeline
 {
     public class ReleasePlayerSettings : WindowsPlayerSettings
     {
-        protected new readonly Dictionary<string, object> defaultSettings = new Dictionary<string, object>()
+        protected new readonly BuildSetting[] defaultSettings = new BuildSetting[]
         {
-            { "runInBackground", true }
-            ,{ "visibleInBackground", true }
-            ,{ "usePlayerLog", false }
-            ,{ "forceSingleInstance", true }
-            //,{ "captureSingleScreen", true }
+             new BuildSetting("runInBackground"         ,true    )
+            ,new BuildSetting("visibleInBackground"     ,true    )
+            ,new BuildSetting("usePlayerLog"            ,false   )
+            ,new BuildSetting("forceSingleInstance"     ,true    )
+            //,new BuildSetting("captureSingleScreen"     ,true    )
         };
 
-        public override void ApplySettings(string applicationName, string companyName, Dictionary<string, object> buildSettings = null)
+        public override void ApplySettings(string applicationName, string companyName, BuildSetting[] buildSettings = null)
         {
             SetName(applicationName, companyName);
             SetIcons();

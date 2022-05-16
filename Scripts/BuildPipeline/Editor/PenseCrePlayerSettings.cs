@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using PacotePenseCre.BuildPipeline;
 
 namespace PacotePenseCre.Editor.BuildPipeline
 {
@@ -11,13 +12,18 @@ namespace PacotePenseCre.Editor.BuildPipeline
         /// <summary>
         /// See <see cref="PlayerSettings"/>
         /// </summary>
-        protected readonly Dictionary<string, object> defaultSettings = new Dictionary<string, object>()
+        protected readonly BuildSetting[] defaultSettings = new BuildSetting[]
         {
-            { "runInBackground", true }
-            ,{ "forceSingleInstance", true }
+            new BuildSetting("runInBackground", true),
+            new BuildSetting("forceSingleInstance", true)
         };
+        //protected readonly Dictionary<string, object> defaultSettings = new Dictionary<string, object>()
+        //{
+        //    { "runInBackground", true }
+        //    ,{ "forceSingleInstance", true }
+        //};
 
-        public abstract void ApplySettings(string applicationName, string companyName, Dictionary<string, object> buildSettings = null);
+        public abstract void ApplySettings(string applicationName, string companyName, BuildSetting[] buildSettings = null);
 
         protected void SetName(string applicationName, string companyName)
         {
@@ -25,7 +31,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             PlayerSettings.productName = applicationName;
         }
 
-        protected void SetBuildSettings(Dictionary<string, object> buildSettings)
+        protected void SetBuildSettings(BuildSetting[] buildSettings)
         {
             if (buildSettings == null) return;
 

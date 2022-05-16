@@ -2,24 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using PacotePenseCre.BuildPipeline;
 
 namespace PacotePenseCre.Editor.BuildPipeline
 {
     public class DebugPlayerSettings : WindowsPlayerSettings
     {
-        protected new readonly Dictionary<string, object> defaultSettings = new Dictionary<string, object>()
+        protected new readonly BuildSetting[] defaultSettings = new BuildSetting[]
         {
-            { "runInBackground", true }
-            ,{ "visibleInBackground", true }
-            ,{ "usePlayerLog", true }
-            ,{ "forceSingleInstance", false }
-            ,{ "captureSingleScreen", false }
+             new BuildSetting("runInBackground"      , true      )
+            ,new BuildSetting("visibleInBackground"  , true      )
+            ,new BuildSetting("usePlayerLog"         , true      )
+            ,new BuildSetting("forceSingleInstance"  , false     )
+            //,new BuildSetting("captureSingleScreen"  , false     )
 #if !UNITY_2019_1_OR_NEWER
-            ,{ "displayResolutionDialog", ResolutionDialogSetting.Enabled }
+            ,new BuildSetting("displayResolutionDialog", ResolutionDialogSetting.Enabled)
 #endif
         };
 
-        public override void ApplySettings(string applicationName, string companyName, Dictionary<string, object> buildSettings = null)
+        public override void ApplySettings(string applicationName, string companyName, BuildSetting[] buildSettings = null)
         {
             SetName(applicationName, companyName);
             SetIcons();

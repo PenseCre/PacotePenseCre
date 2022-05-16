@@ -54,16 +54,16 @@ namespace PacotePenseCre.BuildPipeline
         {
             return Path.Combine(Application.streamingAssetsPath, GetFileName<T>());
         }
-        public static string GetSOFullFilePath<T>(bool relative = false) where T : BuildDataSO
+        public static string GetSOFullFilePath<T>(bool relative = false) where T : DataSO
         {
-            return Path.Combine(relative ? BuildDataSO.BasePathRelative : BuildDataSO.BasePath, GetSOFileName<T>());
+            return Path.Combine(relative ? DataSO.BasePathRelative : DataSO.BasePath, GetSOFileName<T>());
         }
 
         public static string GetFileName<T>() where T : BuildData
         {
             return typeof(T).GetField("FileName").GetValue(null) as string;
         }
-        public static string GetSOFileName<T>() where T : BuildDataSO
+        public static string GetSOFileName<T>() where T : DataSO
         {
             return typeof(T).GetField("FileName").GetValue(null) as string;
         }
@@ -72,9 +72,9 @@ namespace PacotePenseCre.BuildPipeline
         {
             return typeof(T).GetField("DefaultValues").GetValue(null) as T;
         }
-        public static T GetSODefaultValues<T>() where T : BuildDataSO
+        public static T GetSODefaultValues<T>() where T : DataSO
         {
-            return BuildDataSO.DefaultValues as T ?? ScriptableObject.CreateInstance<T>();
+            return DataSO.DefaultValues as T ?? ScriptableObject.CreateInstance<T>();
             //return typeof(T).GetField("DefaultValues").GetValue(null) as T; // unity doesn't like that
         }
     }

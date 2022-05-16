@@ -149,17 +149,28 @@ namespace PacotePenseCre.Editor
                 if (GUILayout.Button("Add Scene")) scenes.Add(new SceneSelection());
             }
             EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
-
 
             GUILayout.Space(20);
 
             EditorGUILayout.LabelField("Build Settings", GUILayout.Width(120));
             EditorGUILayout.BeginHorizontal();
+            
+            GUI.enabled = scenes != null && scenes.Count > 0;
             if (GUILayout.Button("Build Debug")) EditorCoroutine.start(BuildProjectRoutine(false));
             if (GUILayout.Button("Build Release")) EditorCoroutine.start(BuildProjectRoutine(true));
+            GUI.enabled = true;
+
             EditorGUILayout.EndHorizontal();
 
+            //if (GUILayout.Button("Test Button"))
+            //{
+            //    //var a = System.Reflection.Assembly.GetAssembly(typeof(Build)).Location; //this is the location of the cached dll, useless in this context
+            //    // example: C:\Users\user\AppData\Local\Unity\cache\packages\package.openupm.com\org.pensecre.pacote@version\Utilities~\InnoSetupPortable
+            //    var a = Environment.GetEnvironmentVariable("UPM_CACHE_PATH") ?? Environment.GetEnvironmentVariable("LOCALAPPDATA");
+            //    Debug.Log(a);
+            //}
+
+            EditorGUILayout.EndVertical();
         }
 
         private void PopulateSceneOptions()
@@ -196,12 +207,15 @@ namespace PacotePenseCre.Editor
                     CheckForDefaults();
                     WriteBuildInfo(release);
                     BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                    Build.RunBuild(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                    var myScene = new[] { buildScenes[i] };
+                    Build.RunBuild(myScene, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
 
                     yield return new WaitUntil(() => !_buildingScene);
 
                     yield return new WaitForSeconds(1);
-                    Build.Zip(new[] { buildScenes[i] }, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    yield return new WaitForSeconds(1);
+                    Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
                 }
             }
             else
@@ -214,12 +228,14 @@ namespace PacotePenseCre.Editor
                 CheckForDefaults();
                 WriteBuildInfo(release);
                 BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                Build.RunBuild(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                Build.RunBuild(buildScenes, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
 
                 yield return new WaitUntil(() => !_buildingScene);
 
                 yield return new WaitForSeconds(1);
                 Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                yield return new WaitForSeconds(1);
+                Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
             }
             _building = false;
         }
@@ -274,7 +290,7 @@ namespace PacotePenseCre.Editor
                 //    _buildConfig = JsonUtility.ConvertJsonToObject<BuildConfig>(FileUtility.ReadFile(fullFilePath));
             }
         }
-        void LoadBuildDataSO<T>() where T : BuildDataSO
+        void LoadBuildDataSO<T>() where T : DataSO
         {
             string fullFilePath = BuildInfoManager.GetSOFullFilePath<T>();
             string relativeFilePath = BuildInfoManager.GetSOFullFilePath<T>(true);

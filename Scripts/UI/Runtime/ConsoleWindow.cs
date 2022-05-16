@@ -33,7 +33,7 @@ namespace PacotePenseCre.UI
                 clearLog.onClick.AddListener(ClearLog);
 
             UpdateBuildInfo(BuildInfoManager.BuildInfo);
-            UpdateBuildConfig(BuildInfoManager.BuildConfig);
+            //UpdateBuildConfig(BuildInfoManager.BuildConfig);
         }
 
         void OnDisable()
@@ -84,15 +84,13 @@ namespace PacotePenseCre.UI
             if (noteText)
                 noteText.text = string.Format("[BUILD_NOTES] {0}", buildInfo.BuildNotes);
         }
-        public void UpdateBuildConfig(BuildConfig buildConfig)
-        {
-            // todo
-            //buildConfig.ArchiveToZip
-            //buildConfig.MakeInstaller
-            //buildConfig.OneBuildPerScene
-        }
-
-
+        //public void UpdateBuildConfig(BuildConfig buildConfig)
+        //{
+        //    // BuildConfig is meant to give build instructions that are irrelevant to runtime, but we might want to show that in the future
+        //    //buildConfig.ArchiveToZip
+        //    //buildConfig.MakeInstaller
+        //    //buildConfig.OneBuildPerScene
+        //}
         #endregion
 
         #region Console

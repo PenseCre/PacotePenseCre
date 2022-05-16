@@ -38,12 +38,12 @@ namespace PacotePenseCre.BuildPipeline
     /// }
     /// </code>
     ///</remarks>
-    public abstract class BuildDataSO : ScriptableObject
+    public abstract class DataSO : ScriptableObject
     {
         /// <summary>
         /// Overwrite this for each child class implementation
         /// </summary>
-        public static BuildDataSO DefaultValues;
+        public static DataSO DefaultValues;
         //public static BuildDataSO DefaultValues { get => CreateInstance<BuildDataSO>(); }
 
         /// <summary>

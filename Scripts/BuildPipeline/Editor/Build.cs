@@ -17,7 +17,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
     {
         public delegate void BuildCallback();
 
-        public static void RunBuild(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildOptions options, BuildCallback callback)
+        public static void RunBuild(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, BuildCallback callback)
         {
             ClearLog();
             string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
@@ -27,7 +27,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             Debug.Log(string.Format("[BUILD] [{0}] Started @ {1:MM/dd/yy hh:mm:ss}", target.ToString(), DateTime.Now));
 
             CreateBuildFolder(buildLocation, buildFile, target);
-            BuildUnityProject(buildScenes, buildInfo, target, options, buildLocation, buildFile);
+            BuildUnityProject(buildScenes, buildInfo, buildConfig, target, options, buildLocation, buildFile);
 
             Debug.Log(string.Format("[BUILD] [{0}] Completed @ {1:MM/dd/yy hh:mm:ss}.", target.ToString(), DateTime.Now));
 
@@ -44,22 +44,57 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string zipFileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".zip";
-                    string destinationArchiveFileName = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, zipFileName);
-                    Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationArchiveFileName));
+                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".zip";
+                    string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
+                    Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
-                    ZipFile.CreateFromDirectory(buildLocation, destinationArchiveFileName);
+                    ZipFile.CreateFromDirectory(buildLocation, destinationFullPath);
                 }
             }
             else
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string zipFileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
-                string destinationArchiveFileName = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, zipFileName);
-                Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationArchiveFileName));
+                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
+                string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
+                Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
-                ZipFile.CreateFromDirectory(buildLocation, destinationArchiveFileName);
+                ZipFile.CreateFromDirectory(buildLocation, destinationFullPath);
+            }
+        }
+        
+        public static void MakeInstaller(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
+        {
+            if (!buildConfig.MakeInstaller) return;
+
+            if (buildConfig.OneBuildPerScene)
+            {
+                for (int i = 0; i < buildScenes.Length; i++)
+                {
+                    string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
+                    string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
+                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".exe";
+                    string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
+                    Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
+                    
+                    if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
+                    {
+                        Installer.CreateFromDirectory(buildLocation, destinationFullPath);
+                    }
+                }
+            }
+            else
+            {
+                string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
+                string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
+                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".exe";
+                string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
+                Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
+
+                if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
+                {
+                    Installer.CreateFromDirectory(buildLocation, destinationFullPath);
+                }
             }
         }
 
@@ -103,9 +138,9 @@ namespace PacotePenseCre.Editor.BuildPipeline
             Debug.Log("[BUILD] Created: " + Path.GetFullPath(buildLocation));
         }
 
-        private static void BuildUnityProject(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildOptions options, string buildLocation, string buildFile)
+        private static void BuildUnityProject(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, string buildLocation, string buildFile)
         {
-            SetupPlayerSettings(buildInfo);
+            SetupPlayerSettings(buildInfo, buildConfig);
             BuildReport result = UnityEditor.BuildPipeline.BuildPlayer(buildScenes, buildLocation + buildFile, target, options);
             // error logs
             if (result && result.summary.totalErrors > 0)
@@ -118,15 +153,15 @@ namespace PacotePenseCre.Editor.BuildPipeline
             }
         }
 
-        private static void SetupPlayerSettings(BuildInfo buildInfo)
+        private static void SetupPlayerSettings(BuildInfo buildInfo, BuildConfig buildConfig)
         {
             if (!buildInfo.Release)
             {
-                new DebugPlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName);
+                new DebugPlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName, buildConfig.buildSettings);
             }
             else
             {
-                new ReleasePlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName);
+                new ReleasePlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName, buildConfig.buildSettings);
             }
         }
 
