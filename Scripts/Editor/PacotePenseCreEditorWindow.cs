@@ -162,13 +162,18 @@ namespace PacotePenseCre.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            //if (GUILayout.Button("Test Button"))
-            //{
-            //    //var a = System.Reflection.Assembly.GetAssembly(typeof(Build)).Location; //this is the location of the cached dll, useless in this context
-            //    // example: C:\Users\user\AppData\Local\Unity\cache\packages\package.openupm.com\org.pensecre.pacote@version\Utilities~\InnoSetupPortable
-            //    var a = Environment.GetEnvironmentVariable("UPM_CACHE_PATH") ?? Environment.GetEnvironmentVariable("LOCALAPPDATA");
-            //    Debug.Log(a);
-            //}
+            if (GUILayout.Button("Test Button"))
+            {
+                //var a = System.Reflection.Assembly.GetAssembly(typeof(Build)).Location; //this is the location of the cached dll, useless in this context
+                // example: C:\Users\user\AppData\Local\Unity\cache\packages\package.openupm.com\org.pensecre.pacote@version\Utilities~\InnoSetupPortable
+                //var a = Environment.GetEnvironmentVariable("UPM_CACHE_PATH") ?? Environment.GetEnvironmentVariable("LOCALAPPDATA");
+                //Debug.Log(a);
+                for (int i = 0; i < _buildConfig.buildSettings.Length; i++)
+                {
+                    Debug.Log(_buildConfig.buildSettings[i].Key + " : " + _buildConfig.buildSettings[i].Value);
+                }
+                new ReleasePlayerSettings().ApplySettings(_buildInfo.ApplicationName, _buildInfo.CompanyName, _buildConfig.buildSettings);
+            }
 
             EditorGUILayout.EndVertical();
         }

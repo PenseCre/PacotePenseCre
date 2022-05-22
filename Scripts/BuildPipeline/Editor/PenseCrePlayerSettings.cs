@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -44,11 +45,42 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
             foreach (var buildSetting in buildSettings)
             {
-                var prop = properties.FirstOrDefault(x => x.Name == buildSetting.Key); // pay attention to capitalization
-                if (prop != null)
+                var prop = properties.FirstOrDefault(x => x.Name.ToLower() == buildSetting.Key.ToLower());
+                if (prop == null)
                 {
-                    prop.SetValue(null, buildSetting.Value);
+                    Debug.LogError("[SetBuildSettings]: Could not find a property from PlayerSettings named " + buildSetting.Key);
+                    continue;
                 }
+
+                object val = buildSetting.Value;
+
+                if (prop.PropertyType.IsEnum)
+                {
+                    // Here we don't know exactly what enum is it. Therefore we can't use Enum.TryParse<MyEnumType>();
+                    // So below we implement equivalent functionality using enum helper functions.
+                    try
+                    {
+                        var enumUnderlyingType = prop.PropertyType;
+                        var enumValues = Enum.GetValues(prop.PropertyType);
+                        for (int i = 0; i < enumValues.Length; i++)
+                        {
+                            var converted = Convert.ChangeType(enumValues.GetValue(i), enumUnderlyingType).ToString().ToLower();
+                            if (converted == ((string)val).ToLower())
+                            {
+                                val = enumValues.GetValue(i);
+                                break;
+                            }
+                        }
+                        val = Convert.ChangeType(val, Enum.GetUnderlyingType(prop.PropertyType));
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError(e.StackTrace);
+                        continue; // skip setting it up, because we clearly did not get a valid value
+                    }
+                }
+
+                prop.SetValue(null, val);
             }
         }
 

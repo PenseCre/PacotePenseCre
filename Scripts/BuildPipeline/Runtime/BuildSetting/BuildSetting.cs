@@ -17,6 +17,9 @@ namespace PacotePenseCre.BuildPipeline
         [SerializeField] private float _float;
         [SerializeField] private int _int;
         [SerializeField] private string _string;
+        [SerializeField] private Texture2D _texture2D;
+        [SerializeField] private Vector2 _vector2;
+        [SerializeField] private Vector3 _vector3;
         /// <summary>
         /// Used for editor property drawer serialization
         /// </summary>
@@ -30,6 +33,9 @@ namespace PacotePenseCre.BuildPipeline
             _float = default;
             _int = default;
             _string = default;
+            _texture2D = default;
+            _vector2 = default;
+            _vector3 = default;
 
             var typeGot = _value.GetType();
             if (typeGot.IsAssignableFrom(typeof(bool)))
@@ -40,8 +46,14 @@ namespace PacotePenseCre.BuildPipeline
                 type = BuildSettingSupported._int;
             if (typeGot.IsAssignableFrom(typeof(string)))
                 type = BuildSettingSupported._string;
+            if (typeGot.IsAssignableFrom(typeof(Texture2D)))
+                type = BuildSettingSupported._texture2D;
+            if (typeGot.IsAssignableFrom(typeof(Vector2)))
+                type = BuildSettingSupported._vector2;
+            if (typeGot.IsAssignableFrom(typeof(Vector3)))
+                type = BuildSettingSupported._vector3;
 
-            switch (type)
+            switch (type) // could be replaced by system reflection
             {
                 case BuildSettingSupported._bool:
                     _bool = (bool)_value;
@@ -55,7 +67,17 @@ namespace PacotePenseCre.BuildPipeline
                 case BuildSettingSupported._string:
                     _string = (string)_value;
                     break;
+                case BuildSettingSupported._texture2D:
+                    _texture2D = (Texture2D)_value;
+                    break;
+                case BuildSettingSupported._vector2:
+                    _vector2 = (Vector2)_value;
+                    break;
+                case BuildSettingSupported._vector3:
+                    _vector3 = (Vector3)_value;
+                    break;
                 default:
+                    Debug.LogWarning("Unsupported build setting type. Falling back to string.");
                     _string = (string)_value;
                     break;
             }
@@ -95,6 +117,12 @@ namespace PacotePenseCre.BuildPipeline
                         return _int;
                     case BuildSettingSupported._string:
                         return _string;
+                    case BuildSettingSupported._texture2D:
+                        return _texture2D;
+                    case BuildSettingSupported._vector2:
+                        return _vector2;
+                    case BuildSettingSupported._vector3:
+                        return _vector3;
                     default:
                         return value;
                 }
@@ -107,5 +135,8 @@ namespace PacotePenseCre.BuildPipeline
             _float = 1,
             _int = 2,
             _string = 3,
+            _texture2D = 4,
+            _vector2 = 5,
+            _vector3 = 6,
         }
 }

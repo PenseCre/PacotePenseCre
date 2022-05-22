@@ -9,7 +9,7 @@ namespace PacotePenseCre.BuildPipeline
 	public class BuildSettingPropertyDrawer : PropertyDrawer
 	{
         private const float lineSeparation = 2f;
-        private const float buildSettingTypeWidth = 68f;
+        private const float buildSettingTypeWidth = 84f;
         private const float buildSettingTypeSeparation = 4f;
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
@@ -39,25 +39,10 @@ namespace PacotePenseCre.BuildPipeline
             // Draw fields - pass GUIContent.none to each so they are drawn without labels
             EditorGUI.PropertyField(keyRect, property.FindPropertyRelative("key"), GUIContent.none);
             EditorGUI.PropertyField(typeRect, typeProp, GUIContent.none);
+
             BuildSettingSupported type = (BuildSettingSupported)typeProp.enumValueIndex;
-            switch (type)
-            {
-                case BuildSettingSupported._bool:
-                    EditorGUI.PropertyField(valueRect, property.FindPropertyRelative(BuildSettingSupported._bool.ToString()), GUIContent.none);
-                    break;
-                case BuildSettingSupported._float:
-                    EditorGUI.PropertyField(valueRect, property.FindPropertyRelative(BuildSettingSupported._float.ToString()), GUIContent.none);
-                    break;
-                case BuildSettingSupported._int:
-                    EditorGUI.PropertyField(valueRect, property.FindPropertyRelative(BuildSettingSupported._int.ToString()), GUIContent.none);
-                    break;
-                case BuildSettingSupported._string:
-                    EditorGUI.PropertyField(valueRect, property.FindPropertyRelative(BuildSettingSupported._string.ToString()), GUIContent.none);
-                    break;
-                default:
-                    EditorGUI.PropertyField(valueRect, property.FindPropertyRelative("value"), GUIContent.none);
-                    break;
-            }
+            EditorGUI.PropertyField(valueRect, property.FindPropertyRelative(type.ToString()), GUIContent.none);
+
             // Set indent back to what it was
             EditorGUI.indentLevel = indent;
 
