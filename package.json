@@ -1,6 +1,6 @@
 {
   "name": "org.pensecre.pacote",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "displayName": "Pacote Pense Cre",
   "description": "Pacote de ferramentas da ONG Pense Cre.\nhttps://www.pensecre.org\n\nPara come\u00e7ar, adicione PacotePenseCre.Add.Core(); no seu c\u00f3digo.",
   "unity": "2019.1",

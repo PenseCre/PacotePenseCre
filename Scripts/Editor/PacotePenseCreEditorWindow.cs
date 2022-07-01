@@ -21,7 +21,7 @@ namespace PacotePenseCre.Editor
         [MenuItem("File/Build with PenseCre")]
         public static void ShowWindow()
         {
-            EditorWindow.GetWindow<PacotePenseCreEditorWindow>("PenseCre Build Window");
+            GetWindow<PacotePenseCreEditorWindow>("PenseCre Build Window");
         }
 
         #endregion
@@ -39,6 +39,10 @@ namespace PacotePenseCre.Editor
         private bool _buildingScene;
 
         #endregion
+
+        private const float leftColumnWidth = 120f;
+        private const float leftColumnPadding = 10f;
+        private const float clickToRemoveWidth = 16f;
 
         void OnGUI()
         {
@@ -61,119 +65,135 @@ namespace PacotePenseCre.Editor
             if(_buildInfo == null)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("BuildInfo not found", GUILayout.Width(120));
+                EditorGUILayout.LabelField("BuildInfo not found", GUILayout.Width(leftColumnWidth));
                 return;
             }
             if(_buildConfig == null)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("BuildConfig not found", GUILayout.Width(120));
+                EditorGUILayout.LabelField("BuildConfig not found", GUILayout.Width(leftColumnWidth));
                 return;
             }
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Company Name", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Company Name", GUILayout.Width(leftColumnWidth));
             _buildInfo.CompanyName = EditorGUILayout.TextField(_buildInfo.CompanyName);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Application Name", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Application Name", GUILayout.Width(leftColumnWidth));
             _buildInfo.ApplicationName = EditorGUILayout.TextField(_buildInfo.ApplicationName);
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(20);
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Major Version", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Major Version", GUILayout.Width(leftColumnWidth));
             _buildInfo.MajorVersion = EditorGUILayout.IntField(_buildInfo.MajorVersion);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Minor Version", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Minor Version", GUILayout.Width(leftColumnWidth));
             _buildInfo.MinorVersion = EditorGUILayout.IntField(_buildInfo.MinorVersion);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Patch Version", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Patch Version", GUILayout.Width(leftColumnWidth));
             _buildInfo.PatchVersion = EditorGUILayout.IntField(_buildInfo.PatchVersion);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Build Version", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Build Version", GUILayout.Width(leftColumnWidth));
             _buildInfo.BuildVersion = EditorGUILayout.IntField(_buildInfo.BuildVersion);
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(20);
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Build Notes", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Build Notes", GUILayout.Width(leftColumnWidth));
             _buildInfo.BuildNotes = EditorGUILayout.TextArea(_buildInfo.BuildNotes, GUILayout.Height(50));
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(20);
             
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("One build per scene", GUILayout.Width(120));
+            EditorGUILayout.LabelField("One build per scene", GUILayout.Width(leftColumnWidth));
             _buildConfig.OneBuildPerScene = EditorGUILayout.Toggle(_buildConfig.OneBuildPerScene);
             EditorGUILayout.EndHorizontal();
             
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Archive to Zip", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Archive to Zip", GUILayout.Width(leftColumnWidth));
             _buildConfig.ArchiveToZip = EditorGUILayout.Toggle(_buildConfig.ArchiveToZip);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Make Installer", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Make Installer", GUILayout.Width(leftColumnWidth));
             _buildConfig.MakeInstaller = EditorGUILayout.Toggle(_buildConfig.MakeInstaller);
             EditorGUILayout.EndHorizontal();
             
             GUILayout.Space(20);
 
-            EditorGUILayout.LabelField("Scenes", GUILayout.Width(120));
+            EditorGUILayout.LabelField("Scenes", GUILayout.Width(leftColumnWidth));
 
             EditorGUILayout.BeginVertical();
 
+            List<int> clickedToRemove = new List<int>();
             for (int i = 0; i < scenes.Count; i++)
             {
                 EditorGUILayout.BeginHorizontal();
                 int sceneSelection = scenes[i].selectedSceneId;
-                scenes[i].selectedSceneId = EditorGUILayout.Popup("Scene " + i, sceneSelection, _sceneOptions);
+                GUILayout.Space(leftColumnPadding);
+                EditorGUILayout.LabelField("Scene " + i.ToString(), GUILayout.Width(leftColumnWidth - leftColumnPadding - clickToRemoveWidth));
+                if (GUILayout.Button("-", GUILayout.Width(clickToRemoveWidth))) clickedToRemove.Add(i);
+                scenes[i].selectedSceneId = EditorGUILayout.Popup(sceneSelection, _sceneOptions, GUILayout.ExpandWidth(true));
                 scenes[i].selectedScene = _sceneOptions[scenes[i].selectedSceneId];
                 EditorGUILayout.EndHorizontal();
             }
+            for (int i = clickedToRemove.Count - 1; i >= 0; i--)
+            {
+                scenes.RemoveAt(clickedToRemove[i]);
+            }
 
-            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
             if (!_building)
             {
-                if (GUILayout.Button("Refresh Scenes")) populatedOptions = false;
-                if (GUILayout.Button("Add Scene")) scenes.Add(new SceneSelection());
+                if (GUILayout.Button("Refresh Scenes", GUILayout.Width(leftColumnWidth))) populatedOptions = false;
+                if (GUILayout.Button("+ Add Scene", GUILayout.Width(leftColumnWidth))) scenes.Add(new SceneSelection());
             }
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(20);
 
-            EditorGUILayout.LabelField("Build Settings", GUILayout.Width(120));
-            EditorGUILayout.BeginHorizontal();
-            
+            EditorGUILayout.LabelField("Build Settings", GUILayout.Width(leftColumnWidth));
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
+
             GUI.enabled = scenes != null && scenes.Count > 0;
-            if (GUILayout.Button("Build Debug")) EditorCoroutine.start(BuildProjectRoutine(false));
-            if (GUILayout.Button("Build Release")) EditorCoroutine.start(BuildProjectRoutine(true));
+            if (GUILayout.Button("Build Debug", GUILayout.Width(leftColumnWidth))) EditorCoroutine.start(BuildProjectRoutine(false));
+            if (GUILayout.Button("Build Release", GUILayout.Width(leftColumnWidth))) EditorCoroutine.start(BuildProjectRoutine(true));
             GUI.enabled = true;
 
             EditorGUILayout.EndHorizontal();
 
-            if (GUILayout.Button("Test Button"))
-            {
-                //var a = System.Reflection.Assembly.GetAssembly(typeof(Build)).Location; //this is the location of the cached dll, useless in this context
-                // example: C:\Users\user\AppData\Local\Unity\cache\packages\package.openupm.com\org.pensecre.pacote@version\Utilities~\InnoSetupPortable
-                //var a = Environment.GetEnvironmentVariable("UPM_CACHE_PATH") ?? Environment.GetEnvironmentVariable("LOCALAPPDATA");
-                //Debug.Log(a);
-                for (int i = 0; i < _buildConfig.buildSettings.Length; i++)
-                {
-                    Debug.Log(_buildConfig.buildSettings[i].Key + " : " + _buildConfig.buildSettings[i].Value);
-                }
-                new ReleasePlayerSettings().ApplySettings(_buildInfo.ApplicationName, _buildInfo.CompanyName, _buildConfig.buildSettings);
-            }
+            //if (GUILayout.Button("Test Button"))
+            //{
+            //    //Debug.Log(Path.Combine(UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).resolvedPath, "Utilities~", "InnoSetupPortable", "ISCC.exe"));
+
+            //    //Debug.Log(typeof(PacotePenseCreEditorWindow).Assembly.Location);
+            //    //var a = System.Reflection.Assembly.GetAssembly(typeof(Build)).Location; //this is the location of the cached dll, useless in this context
+            //    // example: C:\Users\user\AppData\Local\Unity\cache\packages\package.openupm.com\org.pensecre.pacote@version\Utilities~\InnoSetupPortable
+            //    //var a = Environment.GetEnvironmentVariable("UPM_CACHE_PATH") ?? Environment.GetEnvironmentVariable("LOCALAPPDATA");
+            //    //Debug.Log(a);
+            //    for (int i = 0; i < _buildConfig.buildSettings.Length; i++)
+            //    {
+            //        //Debug.Log(_buildConfig.buildSettings[i].Key + " : " + _buildConfig.buildSettings[i].Value);
+            //    }
+            //    //new ReleasePlayerSettings().ApplySettings(_buildInfo.ApplicationName, _buildInfo.CompanyName, _buildConfig.buildSettings);
+            //}
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.LabelField("v" + UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).version, GUILayout.Width(42f));
+            EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
         }
