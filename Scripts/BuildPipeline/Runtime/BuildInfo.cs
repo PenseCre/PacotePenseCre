@@ -12,22 +12,21 @@ namespace PacotePenseCre.BuildPipeline
 
         public int MajorVersion;
         public int MinorVersion;
-        public int PatchVersion;
         public int BuildVersion;
 
         public string BuildNotes;
 
         public string BuildDateTime;
+        [ReadOnly] public string PacotePenseCreVersion;
 
         public bool Release;
 
         public static new BuildInfo DefaultValues = new BuildInfo
         {
-            CompanyName = "PenseCre",
+            CompanyName = "Pense & Cre",
             ApplicationName = "Nosso Projeto",
             MajorVersion = 1,
             MinorVersion = 0,
-            PatchVersion = 0,
             BuildVersion = 0,
             BuildNotes = "-",
             BuildDateTime = "",
@@ -38,7 +37,7 @@ namespace PacotePenseCre.BuildPipeline
         {
             get
             {
-                return MajorVersion + "." + MinorVersion + "." + PatchVersion + "." + BuildVersion;
+                return MajorVersion + "." + MinorVersion + "." + BuildVersion;
             }
         }
     }

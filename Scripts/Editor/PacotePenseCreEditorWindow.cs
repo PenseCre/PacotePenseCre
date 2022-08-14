@@ -35,7 +35,7 @@ namespace PacotePenseCre.Editor
         private string[] _sceneOptions;
         private bool populatedOptions;
 
-        private bool _building;
+        private bool _busy;
         private bool _buildingScene;
 
         #endregion
@@ -53,6 +53,21 @@ namespace PacotePenseCre.Editor
             if(_buildConfig == null)
             {
                 LoadBuildDataSO<BuildConfig>();
+            }
+            if (string.IsNullOrEmpty(_buildConfig.InstallerScriptLocation) || !File.Exists(_buildConfig.InstallerScriptLocation))
+            {
+                string defaultInstallerScriptDir = BuildConfig.DefaultFolderToBrowseInstallerScriptLocation;
+                if (!Directory.Exists(defaultInstallerScriptDir))
+                {
+                    Directory.CreateDirectory(defaultInstallerScriptDir);
+                }
+                _buildConfig.InstallerScriptLocation = Path.GetFullPath(Path.Combine(defaultInstallerScriptDir, Installer.DEFAULT_FILENAME_WITH_EXTENSION));
+                Debug.Log("Created " + _buildConfig.InstallerScriptLocation);
+                Installer.WriteDefault(_buildConfig.InstallerScriptLocation);
+            }
+            if (Installer.InvalidScript(_buildConfig.InstallerScriptLocation))
+            {
+                Installer.MatchConfig();
             }
 
             if (!populatedOptions)
@@ -98,11 +113,6 @@ namespace PacotePenseCre.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Patch Version", GUILayout.Width(leftColumnWidth));
-            _buildInfo.PatchVersion = EditorGUILayout.IntField(_buildInfo.PatchVersion);
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Build Version", GUILayout.Width(leftColumnWidth));
             _buildInfo.BuildVersion = EditorGUILayout.IntField(_buildInfo.BuildVersion);
             EditorGUILayout.EndHorizontal();
@@ -114,23 +124,6 @@ namespace PacotePenseCre.Editor
             _buildInfo.BuildNotes = EditorGUILayout.TextArea(_buildInfo.BuildNotes, GUILayout.Height(50));
             EditorGUILayout.EndHorizontal();
 
-            GUILayout.Space(20);
-            
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("One build per scene", GUILayout.Width(leftColumnWidth));
-            _buildConfig.OneBuildPerScene = EditorGUILayout.Toggle(_buildConfig.OneBuildPerScene);
-            EditorGUILayout.EndHorizontal();
-            
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Archive to Zip", GUILayout.Width(leftColumnWidth));
-            _buildConfig.ArchiveToZip = EditorGUILayout.Toggle(_buildConfig.ArchiveToZip);
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Make Installer", GUILayout.Width(leftColumnWidth));
-            _buildConfig.MakeInstaller = EditorGUILayout.Toggle(_buildConfig.MakeInstaller);
-            EditorGUILayout.EndHorizontal();
-            
             GUILayout.Space(20);
 
             EditorGUILayout.LabelField("Scenes", GUILayout.Width(leftColumnWidth));
@@ -155,7 +148,7 @@ namespace PacotePenseCre.Editor
             }
 
             EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
-            if (!_building)
+            if (!_busy)
             {
                 if (GUILayout.Button("Refresh Scenes", GUILayout.Width(leftColumnWidth))) populatedOptions = false;
                 if (GUILayout.Button("+ Add Scene", GUILayout.Width(leftColumnWidth))) scenes.Add(new SceneSelection());
@@ -164,18 +157,96 @@ namespace PacotePenseCre.Editor
 
             GUILayout.Space(20);
 
-            EditorGUILayout.LabelField("Build Settings", GUILayout.Width(leftColumnWidth));
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
-
-            GUI.enabled = scenes != null && scenes.Count > 0;
-            if (GUILayout.Button("Build Debug", GUILayout.Width(leftColumnWidth))) EditorCoroutine.start(BuildProjectRoutine(false));
-            if (GUILayout.Button("Build Release", GUILayout.Width(leftColumnWidth))) EditorCoroutine.start(BuildProjectRoutine(true));
-            GUI.enabled = true;
-
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("One build per scene", GUILayout.Width(leftColumnWidth));
+            _buildConfig.OneBuildPerScene = EditorGUILayout.Toggle(_buildConfig.OneBuildPerScene);
             EditorGUILayout.EndHorizontal();
 
-            //if (GUILayout.Button("Test Button"))
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Archive to Zip", GUILayout.Width(leftColumnWidth));
+            _buildConfig.ArchiveToZip = EditorGUILayout.Toggle(_buildConfig.ArchiveToZip);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Make Installer", GUILayout.Width(leftColumnWidth));
+            _buildConfig.MakeInstaller = EditorGUILayout.Toggle(_buildConfig.MakeInstaller);
+            EditorGUILayout.EndHorizontal();
+
+            if (_buildConfig.MakeInstaller)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Installer Script Location: " + _buildConfig.InstallerScriptLocation, GUILayout.Width(leftColumnWidth), GUILayout.ExpandWidth(true));
+                if (GUILayout.Button("Browse", GUILayout.Width(leftColumnWidth)))
+                {
+                    var folderForPanel = BuildConfig.DefaultFolderToBrowseInstallerScriptLocation;
+                    var chosenFile = EditorUtility.OpenFilePanelWithFilters("Select your installer script", folderForPanel, new string[] { Installer.DEFAULT_FILENAME_DESCRIPTION, Installer.DEFAULT_FILE_EXTENSION_WITHOUT_DOT });
+                    if (!string.IsNullOrEmpty(chosenFile))
+                    {
+                        chosenFile = BuildConfig.ShortenPath(chosenFile);
+                        _buildConfig.InstallerScriptLocation = chosenFile;
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(20);
+
+            var canBuild = scenes != null && scenes.Count > 0;
+            var canArchive = canBuild && (_buildConfig.ArchiveToZip || _buildConfig.MakeInstaller);
+            EditorGUILayout.LabelField("Build Commands", GUILayout.Width(leftColumnWidth));
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
+            GUI.enabled = canArchive;
+            if (GUILayout.Button("Archive", GUILayout.Width(leftColumnWidth)))
+            {
+                try
+                {
+                    EditorCoroutine.start(ArchiveOnlyRoutine());
+                }
+                catch (Exception e)
+                {
+                    BuildRoutineCompleted();
+                    throw e;
+                }
+            }
+            GUI.enabled = canBuild;
+            if (GUILayout.Button("Build", GUILayout.Width(leftColumnWidth)))
+            {
+                try
+                {
+                    EditorCoroutine.start(BuildProjectRoutine(false));
+                }
+                catch (Exception e)
+                {
+                    BuildRoutineCompleted();
+                    throw e;
+                }
+            }
+            GUI.enabled = canArchive;
+            if (GUILayout.Button("Build + Archive", GUILayout.Width(leftColumnWidth)))
+            {
+                try
+                {
+                    EditorCoroutine.start(BuildProjectRoutine(true));
+                }
+                catch (Exception e)
+                {
+                    BuildRoutineCompleted();
+                    throw e;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUI.enabled = true;
+
+
+            //if (GUILayout.Button("Test Button for Development"))
             //{
+            //    Debug.Log(Path.Combine(Installer.innoSetupFolder, "PenseCreTemplate.iss"));
+            //    Debug.Log(BuildConfig.DefaultFolderToBrowseInstallerScriptLocation);
+            //    Debug.Log(Installer.DEFAULT_FILENAME_WITH_EXTENSION);
+            //    var folderForPanel = _buildConfig.InstallerScriptLocation;// BuildConfig.DefaultInstallerScriptLocation;
+            //    var chosenFile = EditorUtility.OpenFilePanelWithFilters("Select your installer script", folderForPanel, new string[] { Installer.DEFAULT_FILENAME_DESCRIPTION, Installer.DEFAULT_FILE_EXTENSION_WITHOUT_DOT });
+            //    Debug.Log(chosenFile);
             //    //Debug.Log(Path.Combine(UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).resolvedPath, "Utilities~", "InnoSetupPortable", "ISCC.exe"));
 
             //    //Debug.Log(typeof(PacotePenseCreEditorWindow).Assembly.Location);
@@ -190,9 +261,10 @@ namespace PacotePenseCre.Editor
             //    //new ReleasePlayerSettings().ApplySettings(_buildInfo.ApplicationName, _buildInfo.CompanyName, _buildConfig.buildSettings);
             //}
 
+
             EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.LabelField("v" + UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).version, GUILayout.Width(42f));
+            GUILayout.FlexibleSpace(); // expand horizontal space so next element is on the right side of the window
+            EditorGUILayout.LabelField("Pacote Pense & Cre v" + PacotePenseCreVersionString, GUILayout.Width(156f));
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
@@ -216,9 +288,10 @@ namespace PacotePenseCre.Editor
 
         #region Custom Build Methods
 
-        private IEnumerator BuildProjectRoutine(bool release)
+        private IEnumerator BuildProjectRoutine(bool archive)
         {
-            _building = true;
+            _busy = true;
+            bool release = !_buildConfig.Debug;
 
             string[] buildScenes = new string[scenes.Count];
 
@@ -237,10 +310,13 @@ namespace PacotePenseCre.Editor
 
                     yield return new WaitUntil(() => !_buildingScene);
 
-                    yield return new WaitForSeconds(1);
-                    Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
-                    yield return new WaitForSeconds(1);
-                    Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    if (archive)
+                    {
+                        yield return new WaitForSeconds(1);
+                        Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                        yield return new WaitForSeconds(1);
+                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    }
                 }
             }
             else
@@ -262,14 +338,79 @@ namespace PacotePenseCre.Editor
                 yield return new WaitForSeconds(1);
                 Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
             }
-            _building = false;
+            _busy = false;
+            Debug.Log("[BuildProjectRoutine]: Finished");
+            BuildRoutineCompleted();
+        }
+
+        public IEnumerator ArchiveOnlyRoutine()
+        {
+            _busy = true;
+            bool release = !_buildConfig.Debug;
+            bool archiveToZip = _buildConfig.ArchiveToZip;
+            bool makeInstaller = _buildConfig.MakeInstaller;
+
+            string[] buildScenes = new string[scenes.Count];
+
+            if (_buildConfig.OneBuildPerScene)
+            {
+                for (int i = 0; i < scenes.Count; i++)
+                {
+                    _buildingScene = true;
+                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
+
+                    CheckForDefaults();
+                    WriteBuildInfo(release);
+                    BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
+                    var myScene = new[] { buildScenes[i] };
+                    
+                    if(archiveToZip)
+                    {
+                        Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                        yield return new WaitForSeconds(1);
+                    }
+                    if (makeInstaller)
+                    {
+                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                        yield return new WaitForSeconds(1);
+                    }
+                }
+            }
+            else
+            {
+                _buildingScene = true;
+                for (int i = 0; i < scenes.Count; i++)
+                {
+                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
+                }
+                CheckForDefaults();
+                WriteBuildInfo(release);
+                if(archiveToZip)
+                {
+                    Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    yield return new WaitForSeconds(1);
+                }
+                if (makeInstaller)
+                {
+                    Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    yield return new WaitForSeconds(1);
+                }
+            }
+            _busy = false;
+            Debug.Log("[ArchiveOnlyRoutine]: Finished");
+            BuildRoutineCompleted();
         }
 
         private void BuildSceneCompleted()
         {
             LoadBuildData<BuildInfo>();
-            LoadBuildDataSO<BuildConfig>();
             _buildingScene = true;
+        }
+
+        private void BuildRoutineCompleted()
+        {
+            LoadBuildDataSO<BuildConfig>();
+            _buildingScene = false;
         }
 
         private void WriteBuildInfo(bool release)
@@ -280,10 +421,10 @@ namespace PacotePenseCre.Editor
                 ApplicationName = _buildInfo.ApplicationName,
                 MajorVersion = _buildInfo.MajorVersion,
                 MinorVersion = _buildInfo.MinorVersion,
-                PatchVersion = _buildInfo.PatchVersion,
                 BuildVersion = _buildInfo.BuildVersion,
                 BuildNotes = _buildInfo.BuildNotes,
                 BuildDateTime = CurrentDateString,
+                PacotePenseCreVersion = PacotePenseCreVersionString,
                 Release = release
             };
 
@@ -358,6 +499,14 @@ namespace PacotePenseCre.Editor
             get { return string.Format("{0:MM/dd/yy - hh:mm:ss}", System.DateTime.Now); }
         }
 
+        /// <summary>
+        /// Example format: 1.2.3 (major, minor, build/update)
+        /// Update Version of this package in PacotePenseCre/package.json when developing it. Check the latest version in the Window > PackageManager.
+        /// </summary>
+        public string PacotePenseCreVersionString
+        {
+            get { return UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).version; }
+        }
         #endregion
     }
 

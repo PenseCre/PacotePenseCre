@@ -63,6 +63,11 @@ namespace PacotePenseCre.Editor.BuildPipeline
             }
         }
         
+        public static void PrepareInstallerScript(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
+        {
+            // .iss wip
+        }
+
         public static void MakeInstaller(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
         {
             if (!buildConfig.MakeInstaller) return;
@@ -79,7 +84,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
                     
                     if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
                     {
-                        Installer.CreateFromDirectory(buildLocation, destinationFullPath);
+                        Installer.CreateFromDirectory(buildLocation, destinationFullPath, BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation));
                     }
                 }
             }
@@ -93,7 +98,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
                 if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
                 {
-                    Installer.CreateFromDirectory(buildLocation, destinationFullPath);
+                    Installer.CreateFromDirectory(buildLocation, destinationFullPath, BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation));
                 }
             }
         }
@@ -107,7 +112,6 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 buildLocation += isRelease ? "Release/" : "Debug/";
                 buildLocation += sceneName + "/";
             }
-
             return Path.GetFullPath(buildLocation);
         }
 

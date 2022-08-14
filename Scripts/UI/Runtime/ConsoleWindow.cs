@@ -74,7 +74,7 @@ namespace PacotePenseCre.UI
         public void UpdateBuildInfo(BuildInfo buildInfo)
         {
             if (versionText)
-                versionText.text = string.Format("[VERSION] {0}.{1}.{2}.{3}", buildInfo.MajorVersion, buildInfo.MinorVersion, buildInfo.PatchVersion, buildInfo.BuildVersion);
+                versionText.text = string.Format("[VERSION] {0}.{1}.{2}", buildInfo.MajorVersion, buildInfo.MinorVersion, buildInfo.BuildVersion);
             if (platformText)
                 platformText.text = string.Format("[BUILD_TYPE] {0} [PLATFORM] {1}", buildInfo.Release ? "Release" : "Development", Application.platform);
             if (appText)

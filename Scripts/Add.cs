@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 /// <summary>
 /// Base namespace used as a shortcut or factory, to add project dependencies.
 /// </summary>

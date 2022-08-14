@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,11 +9,20 @@ namespace PacotePenseCre.BuildPipeline
     public class BuildConfig : DataSO
     {
         public static new readonly string FileName = "buildConfig.asset";
+        public static readonly string DefaultInstallerScriptLocation = Path.Combine(BaseEditorPathProject, "InstallerScript");
+        public static readonly string DefaultFolderToBrowseInstallerScriptLocation = Directory.Exists(DefaultInstallerScriptLocation) ? DefaultInstallerScriptLocation : BaseEditorPathProject;
+
         public BuildSetting[] buildSettings = null;
 
         public bool OneBuildPerScene;
         public bool ArchiveToZip;
         public bool MakeInstaller;
+        public bool Debug;
+
+        /// <summary>
+        /// Use <see cref="DataSO.ExpandPath"/> or <see cref="DataSO.ShortenPath"/> accordingly
+        /// </summary>
+        [ReadOnly] public string InstallerScriptLocation;
 
         public static new BuildConfig DefaultValues
         {
