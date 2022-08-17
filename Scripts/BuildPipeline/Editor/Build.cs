@@ -71,6 +71,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
         public static void MakeInstaller(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
         {
             if (!buildConfig.MakeInstaller) return;
+            string script = BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation);
 
             if (buildConfig.OneBuildPerScene)
             {
@@ -84,7 +85,17 @@ namespace PacotePenseCre.Editor.BuildPipeline
                     
                     if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
                     {
-                        Installer.CreateFromDirectory(buildLocation, destinationFullPath, BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation));
+                        var managedVariables = new InstallerScriptManagedVariables()
+                        {
+                            buildLocation = buildLocation,
+                            buildLocation_relative = BuildConfig.ShortenPath(buildLocation, "../"),
+                            destinationFullPath = destinationFullPath,
+                            applicationName = buildInfo.ApplicationName,
+                            versionName = buildInfo.GetVersionName,
+                            companyName = buildInfo.CompanyName,
+                            fileName = fileName
+                        };
+                        Installer.CreateFromDirectory(script, managedVariables);
                     }
                 }
             }
@@ -98,7 +109,17 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
                 if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
                 {
-                    Installer.CreateFromDirectory(buildLocation, destinationFullPath, BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation));
+                    var managedVariables = new InstallerScriptManagedVariables()
+                    {
+                        buildLocation = buildLocation,
+                        buildLocation_relative = BuildConfig.ShortenPath(buildLocation, "../"),
+                        destinationFullPath = destinationFullPath,
+                        applicationName = buildInfo.ApplicationName,
+                        versionName = buildInfo.GetVersionName,
+                        companyName = buildInfo.CompanyName,
+                        fileName = fileName
+                    };
+                    Installer.CreateFromDirectory(script, managedVariables);
                 }
             }
         }

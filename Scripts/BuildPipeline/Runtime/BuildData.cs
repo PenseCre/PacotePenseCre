@@ -69,14 +69,14 @@ namespace PacotePenseCre.BuildPipeline
         /// <summary>
         /// Shorten the input path by removing its project root folder (<see cref="DataSO.BaseEditorPathProject"/>) from it for easier reading.
         /// </summary>
-        public static string ShortenPath(string input)
+        public static string ShortenPath(string input, string prefixToAddIfShortened = "")
         {
             string ret = "" + input; // "" + prevent this from being a pointer (just in case)
             bool inputPathIsInsideDefaultBasePath = ret.Replace("/", "\\").StartsWith(BaseEditorPathProject.Replace("/", "\\"));
             if (inputPathIsInsideDefaultBasePath)
             {
                 // chop the path's defaultBasePath from input path string
-                ret = ret.Substring(BaseEditorPathProject.Length + 1, ret.Length - BaseEditorPathProject.Length - 1);
+                ret = prefixToAddIfShortened + ret.Substring(BaseEditorPathProject.Length + 1, ret.Length - BaseEditorPathProject.Length - 1);
             }
             return ret;
         }

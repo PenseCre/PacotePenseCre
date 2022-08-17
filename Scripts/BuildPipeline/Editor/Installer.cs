@@ -26,13 +26,15 @@ namespace PacotePenseCre.Editor.BuildPipeline
         public static readonly string innoSetupFolder = Path.Combine(packageRoot, "Utilities~", "InnoSetupPortable");
         //public static readonly string defaultInnoSetupScript = Path.GetFullPath(Path.Combine(packageRoot, DEFAULT_FOLDER_NAME, DEFAULT_FILENAME_WITH_EXTENSION));
 
-        public static void CreateFromDirectory(string buildLocation, string destinationArchiveFileName, string innoSetupScript = "")
+        public static void CreateFromDirectory(string innoSetupScript, InstallerScriptManagedVariables managedVariables = null)
         {
             string innoSetupCommandLine = Path.Combine(innoSetupFolder, "ISCC.exe");
             if (!File.Exists(innoSetupCommandLine)) throw new FileNotFoundException("[Installer.CreateFromDirectory]: InnoSetup CommandLine (ISCC.exe) not found in " + innoSetupCommandLine);
             
             //if (!File.Exists(innoSetupScript)) innoSetupScript = defaultInnoSetupScript;
             if (!File.Exists(innoSetupScript)) throw new FileNotFoundException("[Installer.CreateFromDirectory]: InnoSetup Compiler Script not found in " + innoSetupScript);
+
+            if(managedVariables != null) ManageScript(innoSetupScript, managedVariables);
 
             Process process = new Process();
             ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -44,24 +46,83 @@ namespace PacotePenseCre.Editor.BuildPipeline
             process.WaitForExit(TIMEOUT);
         }
 
-        public static void MatchConfig()
-        {
-            //todo: change define fields of the installer script to match with build config data
-        }
-
-        public static bool InvalidScript(string installerScriptLocation)
-        {
-            // todo: check define fields and compare to build config data
-            return string.IsNullOrEmpty(installerScriptLocation) || !File.Exists(installerScriptLocation);
-        }
-
         public static void WriteDefault(string installerScriptLocation)
         {
+            if (File.Exists(installerScriptLocation))
+            {
+                return;
+            }
             string template = Path.GetFullPath(Path.Combine(innoSetupFolder, "Examples", "PenseCreTemplate.iss"));
             if (File.Exists(template))
             {
                 File.Copy(template, installerScriptLocation, false);
+
+                // overwrite default guid from template with new one
+                var lines = File.ReadAllLines(installerScriptLocation);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    var line = lines[i];
+                    string suffix = "\"";
+                    string prefix;
+                    if (line.StartsWith(prefix = "#define MyAppId \""))
+                    {
+                        lines[i] = prefix + "{{" + Guid.NewGuid().ToString() + "}}" + suffix;
+                    }
+                }
+                File.WriteAllLines(installerScriptLocation, lines);
             }
         }
+
+        public static void ManageScript(string script, InstallerScriptManagedVariables managedVariables = null)
+        {
+            if (managedVariables == null) return;
+            
+            //#define MyAppName "Project Think & Believe"
+            //#define MyAppVersion "0.0.1"
+            //#define MyAppPublisher "Pense & Cre"
+            //#define MyAppExeName "Project Think & Believe.exe" 
+            //#define InputDir "..\Builds\Windows\Release\Main"
+
+            var lines = File.ReadAllLines(script);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                string suffix = "\"";
+                string prefix;
+                string managedVar;
+                if (line.StartsWith(prefix = "#define MyAppName \"") && !string.IsNullOrEmpty(managedVar = managedVariables.applicationName))
+                {
+                    lines[i] = prefix + managedVar + suffix;
+                }
+                if (line.StartsWith(prefix = "#define MyAppVersion \"") && !string.IsNullOrEmpty(managedVar = managedVariables.versionName))
+                {
+                    lines[i] = prefix + managedVar + suffix;
+                }
+                if (line.StartsWith(prefix = "#define MyAppPublisher \"") && !string.IsNullOrEmpty(managedVar = managedVariables.companyName))
+                {
+                    lines[i] = prefix + managedVar + suffix;
+                }
+                if (line.StartsWith(prefix = "#define MyAppExeName \"") && !string.IsNullOrEmpty(managedVar = managedVariables.applicationName))
+                {
+                    lines[i] = prefix + managedVar + ".exe" + suffix;
+                }
+                if (line.StartsWith(prefix = "#define InputDir \"") && !string.IsNullOrEmpty(managedVar = managedVariables.buildLocation_relative))
+                {
+                    lines[i] = prefix + managedVar.Replace("/", "\\") + suffix;
+                }
+            }
+            File.WriteAllLines(script, lines);
+        }
+    }
+
+    public class InstallerScriptManagedVariables
+    {
+        public string buildLocation;
+        public string buildLocation_relative;
+        public string destinationFullPath;
+        public string applicationName;
+        public string versionName;
+        public string companyName;
+        public string fileName;
     }
 }

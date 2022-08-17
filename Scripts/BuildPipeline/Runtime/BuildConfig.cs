@@ -10,7 +10,17 @@ namespace PacotePenseCre.BuildPipeline
     {
         public static new readonly string FileName = "buildConfig.asset";
         public static readonly string DefaultInstallerScriptLocation = Path.Combine(BaseEditorPathProject, "InstallerScript");
-        public static readonly string DefaultFolderToBrowseInstallerScriptLocation = Directory.Exists(DefaultInstallerScriptLocation) ? DefaultInstallerScriptLocation : BaseEditorPathProject;
+        public static string DefaultFolderToBrowseInstallerScriptLocation
+        {
+            get
+            {
+                if (!Directory.Exists(DefaultInstallerScriptLocation))
+                {
+                    Directory.CreateDirectory(DefaultInstallerScriptLocation);
+                }
+                return DefaultInstallerScriptLocation;
+            }
+        }
 
         public BuildSetting[] buildSettings = null;
 

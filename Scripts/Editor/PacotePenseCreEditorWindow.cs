@@ -61,13 +61,10 @@ namespace PacotePenseCre.Editor
                 {
                     Directory.CreateDirectory(defaultInstallerScriptDir);
                 }
-                _buildConfig.InstallerScriptLocation = Path.GetFullPath(Path.Combine(defaultInstallerScriptDir, Installer.DEFAULT_FILENAME_WITH_EXTENSION));
-                Debug.Log("Created " + _buildConfig.InstallerScriptLocation);
-                Installer.WriteDefault(_buildConfig.InstallerScriptLocation);
-            }
-            if (Installer.InvalidScript(_buildConfig.InstallerScriptLocation))
-            {
-                Installer.MatchConfig();
+                string installerScriptLocation = Path.GetFullPath(Path.Combine(defaultInstallerScriptDir, Installer.DEFAULT_FILENAME_WITH_EXTENSION));
+                Debug.Log("Created " + installerScriptLocation);
+                Installer.WriteDefault(installerScriptLocation);
+                _buildConfig.InstallerScriptLocation = BuildConfig.ShortenPath(installerScriptLocation);
             }
 
             if (!populatedOptions)
@@ -404,13 +401,15 @@ namespace PacotePenseCre.Editor
         private void BuildSceneCompleted()
         {
             LoadBuildData<BuildInfo>();
-            _buildingScene = true;
+            _buildingScene = false;
+            Debug.Log("[BuildSceneCompleted]");
         }
 
         private void BuildRoutineCompleted()
         {
             LoadBuildDataSO<BuildConfig>();
             _buildingScene = false;
+            Debug.Log("[BuildRoutineCompleted]");
         }
 
         private void WriteBuildInfo(bool release)
