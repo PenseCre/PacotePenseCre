@@ -40,5 +40,25 @@ namespace PacotePenseCre.BuildPipeline
                 return MajorVersion + "." + MinorVersion + "." + BuildVersion;
             }
         }
+
+        public void TryParseVersion(string bundleVersion)
+        {
+            string[] versionNumbers = bundleVersion.Split('.');
+            if(versionNumbers != null && versionNumbers.Length == 3)
+            {
+                int n0;
+                int n1;
+                int n2;
+                if (int.TryParse(versionNumbers[0], out n0)
+                    && int.TryParse(versionNumbers[1], out n1)
+                    && int.TryParse(versionNumbers[2], out n2)
+                    )
+                {
+                    MajorVersion = n0;
+                    MinorVersion = n1;
+                    BuildVersion = n2;
+                }
+            }
+        }
     }
 }

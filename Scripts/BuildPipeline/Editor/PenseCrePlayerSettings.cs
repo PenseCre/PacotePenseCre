@@ -24,12 +24,13 @@ namespace PacotePenseCre.Editor.BuildPipeline
         //    ,{ "forceSingleInstance", true }
         //};
 
-        public abstract void ApplySettings(string applicationName, string companyName, BuildSetting[] buildSettings = null);
+        public abstract void ApplySettings(string applicationName, string companyName, string version, BuildSetting[] buildSettings = null);
 
-        protected void SetName(string applicationName, string companyName)
+        protected void SetName(string applicationName, string companyName, string version)
         {
             PlayerSettings.companyName = companyName;
             PlayerSettings.productName = applicationName;
+            PlayerSettings.bundleVersion = version;
         }
 
         protected void SetBuildSettings(BuildSetting[] buildSettings)

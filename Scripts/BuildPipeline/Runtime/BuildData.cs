@@ -59,7 +59,7 @@ namespace PacotePenseCre.BuildPipeline
         /// <summary>
         /// Absolute path where scriptable objects will be created from this package - Do not overwrite this
         /// </summary>
-        public static readonly string BasePath = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, "Data", "Editor"));
+        public static readonly string BasePath = Path.GetFullPath(Path.Combine(BaseEditorPathProject, "Assets", "Data", "Editor"));
         /// <summary>
         /// Path where scriptable objects will be created from this package, relative to Project Root - Do not overwrite this
         /// </summary>

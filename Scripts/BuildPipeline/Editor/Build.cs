@@ -182,11 +182,11 @@ namespace PacotePenseCre.Editor.BuildPipeline
         {
             if (!buildInfo.Release)
             {
-                new DebugPlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName, buildConfig.buildSettings);
+                new DebugPlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName, buildInfo.GetVersionName, buildConfig.buildSettings);
             }
             else
             {
-                new ReleasePlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName, buildConfig.buildSettings);
+                new ReleasePlayerSettings().ApplySettings(buildInfo.ApplicationName, buildInfo.CompanyName, buildInfo.GetVersionName, buildConfig.buildSettings);
             }
         }
 

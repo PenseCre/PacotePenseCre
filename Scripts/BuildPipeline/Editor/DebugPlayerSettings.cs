@@ -20,9 +20,9 @@ namespace PacotePenseCre.Editor.BuildPipeline
 #endif
         };
 
-        public override void ApplySettings(string applicationName, string companyName, BuildSetting[] buildSettings = null)
+        public override void ApplySettings(string applicationName, string companyName, string version, BuildSetting[] buildSettings = null)
         {
-            SetName(applicationName, companyName);
+            SetName(applicationName, companyName, version);
             SetIcons();
             //SetDisplay();
 

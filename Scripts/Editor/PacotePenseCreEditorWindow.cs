@@ -121,6 +121,10 @@ namespace PacotePenseCre.Editor
             _buildInfo.BuildNotes = EditorGUILayout.TextArea(_buildInfo.BuildNotes, GUILayout.Height(50));
             EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
+            if (GUILayout.Button("Load From Project", GUILayout.Width(leftColumnWidth))) LoadFromProject();
+            EditorGUILayout.EndHorizontal();
+
             GUILayout.Space(20);
 
             EditorGUILayout.LabelField("Scenes", GUILayout.Width(leftColumnWidth));
@@ -284,6 +288,13 @@ namespace PacotePenseCre.Editor
         }
 
         #region Custom Build Methods
+
+        private void LoadFromProject()
+        {
+            _buildInfo.TryParseVersion(PlayerSettings.bundleVersion);
+            _buildInfo.CompanyName = PlayerSettings.companyName;
+            _buildInfo.ApplicationName = PlayerSettings.productName;
+        }
 
         private IEnumerator BuildProjectRoutine(bool archive)
         {
