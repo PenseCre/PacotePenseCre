@@ -33,13 +33,21 @@ namespace PacotePenseCre.UI
 
         public void RegisterWindow(UIScreen window)
         {
-            if (!_registeredWindows.ContainsValue(window) && !_registeredWindows.ContainsValue(window))
+            if (!_registeredWindows.ContainsValue(window))
             {
                 _registeredWindows.Add(window.GetType().Name, window);
             }
             else
             {
                 Debug.Log("Window Key OR Value has already been registered");
+            }
+        }
+        
+        public void UnRegisterWindow(UIScreen window)
+        {
+            if (_registeredWindows.ContainsValue(window))
+            {
+                _registeredWindows.Remove(window.GetType().Name);
             }
         }
 

@@ -23,6 +23,11 @@ namespace PacotePenseCre.UI
             HideScreen(false);
         }
 
+        private void OnDestroy()
+        {
+            WindowManager.Instance.UnRegisterWindow(this);
+        }
+
         public void ShowScreen(bool animate = true)
         {
             if (!animate)

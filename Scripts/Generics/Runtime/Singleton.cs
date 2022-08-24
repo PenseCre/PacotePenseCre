@@ -18,6 +18,12 @@ namespace PacotePenseCre.Generics
         {
             get
             {
+#if UNITY_EDITOR
+                if (Application.isPlaying)
+                {
+                    applicationIsQuitting = false;
+                }
+#endif
                 if (applicationIsQuitting)
                 {
                     Debug.LogWarning("[Singleton] - Instance '" + typeof(T) +
@@ -47,7 +53,6 @@ namespace PacotePenseCre.Generics
                             singleton.name = "(singleton) " + typeof(T).ToString();
 
                             DontDestroyOnLoad(singleton);
-
                             Debug.Log("[Singleton] - An instance of " + typeof(T) +
                                 " is needed in the scene, so '" + singleton +
                                 "' was created in DontDestroyOnLoad.");
