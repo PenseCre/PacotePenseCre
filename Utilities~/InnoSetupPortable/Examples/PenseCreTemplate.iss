@@ -11,6 +11,7 @@
 #define MyAppPublisher "Pense & Cre"
 #define MyAppExeName "Nosso Projeto.exe" 
 #define InputDir "..\Builds\Windows\Release\Main"
+#define MyInstallerName "NossoProjeto_0.0.1_2022-04-22_13-00.exe"
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, select value below, click Tools > Generate GUID inside the InnoSetupCompiler IDE.)
@@ -36,7 +37,9 @@ DefaultGroupName={#MyAppName}
 WizardStyle=modern
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename={#MyAppName}_{#MyAppVersion}_{#Date}
+; Comment line below and uncomment following to add version+date to the installer
+OutputBaseFilename={#MyInstallerName}
+;OutputBaseFilename={#MyInstallerName}_{#MyAppVersion}_{#Date}
 UninstallDisplayIcon={app}\{#MyAppName}
 Compression=lzma
 SolidCompression=yes

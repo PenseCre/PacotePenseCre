@@ -19,7 +19,6 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
         public static void RunBuild(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, BuildCallback callback)
         {
-            ClearLog();
             string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
             string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
             string buildFile = buildInfo.ApplicationName + ".exe";
@@ -44,7 +43,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".zip";
+                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
                     string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
                     Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
@@ -68,7 +67,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             // .iss wip
         }
 
-        public static void MakeInstaller(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
+        public static void MakeInstaller(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig, string guid)
         {
             if (!buildConfig.MakeInstaller) return;
             string script = BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation);
@@ -79,8 +78,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-MM") + ".exe";
-                    string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
+                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+                    string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName + ".exe");
                     Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
                     
                     if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
@@ -93,9 +92,10 @@ namespace PacotePenseCre.Editor.BuildPipeline
                             applicationName = buildInfo.ApplicationName,
                             versionName = buildInfo.GetVersionName,
                             companyName = buildInfo.CompanyName,
-                            fileName = fileName
+                            fileName = fileName,
+                            guid = guid
                         };
-                        Installer.CreateFromDirectory(script, managedVariables);
+                        Installer.CreateFromDirectory(script, managedVariables, buildConfig.OverwriteGuid);
                     }
                 }
             }
@@ -103,8 +103,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".exe";
-                string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
+                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+                string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName + ".exe");
                 Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
                 if (target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64)
@@ -117,9 +117,10 @@ namespace PacotePenseCre.Editor.BuildPipeline
                         applicationName = buildInfo.ApplicationName,
                         versionName = buildInfo.GetVersionName,
                         companyName = buildInfo.CompanyName,
-                        fileName = fileName
+                        fileName = fileName,
+                        guid = guid
                     };
-                    Installer.CreateFromDirectory(script, managedVariables);
+                    Installer.CreateFromDirectory(script, managedVariables, buildConfig.OverwriteGuid);
                 }
             }
         }

@@ -5,7 +5,7 @@
     "url": "https://www.pensecre.org"
   },
   "name": "org.pensecre.pacote",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "displayName": "Pacote Pense & Cre",
   "description": "Pacote de ferramentas da ONG Pense & Cre.\nhttps://www.pensecre.org\n\nPara come\u00e7ar, adicione PacotePenseCre.Add.Core(); no seu c\u00f3digo.",
   "unity": "2019.1",

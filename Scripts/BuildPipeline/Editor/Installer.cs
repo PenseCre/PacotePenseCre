@@ -26,7 +26,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
         public static readonly string innoSetupFolder = Path.Combine(packageRoot, "Utilities~", "InnoSetupPortable");
         //public static readonly string defaultInnoSetupScript = Path.GetFullPath(Path.Combine(packageRoot, DEFAULT_FOLDER_NAME, DEFAULT_FILENAME_WITH_EXTENSION));
 
-        public static void CreateFromDirectory(string innoSetupScript, InstallerScriptManagedVariables managedVariables = null)
+        public static void CreateFromDirectory(string innoSetupScript, InstallerScriptManagedVariables managedVariables = null, bool overwriteGuid = true)
         {
             string innoSetupCommandLine = Path.Combine(innoSetupFolder, "ISCC.exe");
             if (!File.Exists(innoSetupCommandLine)) throw new FileNotFoundException("[Installer.CreateFromDirectory]: InnoSetup CommandLine (ISCC.exe) not found in " + innoSetupCommandLine);
@@ -34,7 +34,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             //if (!File.Exists(innoSetupScript)) innoSetupScript = defaultInnoSetupScript;
             if (!File.Exists(innoSetupScript)) throw new FileNotFoundException("[Installer.CreateFromDirectory]: InnoSetup Compiler Script not found in " + innoSetupScript);
 
-            if(managedVariables != null) ManageScript(innoSetupScript, managedVariables);
+            if(managedVariables != null) ManageScript(innoSetupScript, managedVariables, overwriteGuid);
 
             Process process = new Process();
             ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -73,7 +73,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             }
         }
 
-        public static void ManageScript(string script, InstallerScriptManagedVariables managedVariables = null)
+        public static void ManageScript(string script, InstallerScriptManagedVariables managedVariables = null, bool overwriteGuid = true)
         {
             if (managedVariables == null) return;
             
@@ -93,22 +93,37 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 if (line.StartsWith(prefix = "#define MyAppName \"") && !string.IsNullOrEmpty(managedVar = managedVariables.applicationName))
                 {
                     lines[i] = prefix + managedVar + suffix;
+                    continue;
                 }
                 if (line.StartsWith(prefix = "#define MyAppVersion \"") && !string.IsNullOrEmpty(managedVar = managedVariables.versionName))
                 {
                     lines[i] = prefix + managedVar + suffix;
+                    continue;
                 }
                 if (line.StartsWith(prefix = "#define MyAppPublisher \"") && !string.IsNullOrEmpty(managedVar = managedVariables.companyName))
                 {
                     lines[i] = prefix + managedVar + suffix;
+                    continue;
                 }
                 if (line.StartsWith(prefix = "#define MyAppExeName \"") && !string.IsNullOrEmpty(managedVar = managedVariables.applicationName))
                 {
                     lines[i] = prefix + managedVar + ".exe" + suffix;
+                    continue;
                 }
                 if (line.StartsWith(prefix = "#define InputDir \"") && !string.IsNullOrEmpty(managedVar = managedVariables.buildLocation_relative))
                 {
                     lines[i] = prefix + managedVar.Replace("/", "\\") + suffix;
+                    continue;
+                }
+                if (line.StartsWith(prefix = "#define MyInstallerName \"") && !string.IsNullOrEmpty(managedVar = managedVariables.fileName))
+                {
+                    lines[i] = prefix + managedVar + suffix;
+                    continue;
+                }
+                if (line.StartsWith(prefix = "#define MyAppId \"") && !string.IsNullOrEmpty(managedVar = managedVariables.guid) && overwriteGuid)
+                {
+                    lines[i] = prefix + "{{" + managedVar + "}}" + suffix;
+                    continue;
                 }
             }
             File.WriteAllLines(script, lines);
@@ -124,5 +139,6 @@ namespace PacotePenseCre.Editor.BuildPipeline
         public string versionName;
         public string companyName;
         public string fileName;
+        public string guid;
     }
 }

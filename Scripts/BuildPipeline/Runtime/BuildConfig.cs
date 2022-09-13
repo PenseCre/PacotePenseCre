@@ -28,6 +28,7 @@ namespace PacotePenseCre.BuildPipeline
         public bool ArchiveToZip;
         public bool MakeInstaller;
         public bool Debug;
+        public bool OverwriteGuid = true;
 
         /// <summary>
         /// Use <see cref="DataSO.ExpandPath"/> or <see cref="DataSO.ShortenPath"/> accordingly

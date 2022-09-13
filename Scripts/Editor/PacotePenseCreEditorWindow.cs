@@ -151,8 +151,15 @@ namespace PacotePenseCre.Editor
             EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
             if (!_busy)
             {
-                if (GUILayout.Button("Refresh Scenes", GUILayout.Width(leftColumnWidth))) populatedOptions = false;
+                if (GUILayout.Button("↻ Refresh Scenes", GUILayout.Width(leftColumnWidth))) populatedOptions = false;
                 if (GUILayout.Button("+ Add Scene", GUILayout.Width(leftColumnWidth))) scenes.Add(new SceneSelection());
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
+            if (!_busy)
+            {
+                EditorGUILayout.LabelField("Debug (Development) build");
+                _buildConfig.Debug = EditorGUILayout.Toggle(_buildConfig.Debug);
             }
             EditorGUILayout.EndHorizontal();
 
@@ -172,6 +179,18 @@ namespace PacotePenseCre.Editor
             EditorGUILayout.LabelField("Make Installer", GUILayout.Width(leftColumnWidth));
             _buildConfig.MakeInstaller = EditorGUILayout.Toggle(_buildConfig.MakeInstaller);
             EditorGUILayout.EndHorizontal();
+
+            if (_buildConfig.MakeInstaller)
+            {
+                EditorGUILayout.BeginHorizontal();
+                var overwriteGuidWithTooltip = new GUIContent(
+                    "Overwrite Guid (?)", "This manages/replaces the unique identifier (guid) of your InstallerScript.iss with the unity scene's guid for each build (find it in MyUnityScene.meta file).\n\n" +
+                    "This keeps installation and versioning auto-replacement consistent as long as you continue to use the same scene file.\n\n" +
+                    "Untick this if you want to manage it manually.");
+                EditorGUILayout.LabelField(overwriteGuidWithTooltip, GUILayout.Width(leftColumnWidth));
+                _buildConfig.OverwriteGuid = EditorGUILayout.Toggle(_buildConfig.OverwriteGuid);
+                EditorGUILayout.EndHorizontal();
+            }
 
             if (_buildConfig.MakeInstaller)
             {
@@ -242,12 +261,21 @@ namespace PacotePenseCre.Editor
 
             //if (GUILayout.Button("Test Button for Development"))
             //{
-            //    Debug.Log(Path.Combine(Installer.innoSetupFolder, "PenseCreTemplate.iss"));
-            //    Debug.Log(BuildConfig.DefaultFolderToBrowseInstallerScriptLocation);
-            //    Debug.Log(Installer.DEFAULT_FILENAME_WITH_EXTENSION);
-            //    var folderForPanel = _buildConfig.InstallerScriptLocation;// BuildConfig.DefaultInstallerScriptLocation;
-            //    var chosenFile = EditorUtility.OpenFilePanelWithFilters("Select your installer script", folderForPanel, new string[] { Installer.DEFAULT_FILENAME_DESCRIPTION, Installer.DEFAULT_FILE_EXTENSION_WITHOUT_DOT });
-            //    Debug.Log(chosenFile);
+            //    ////string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(_buildConfig));
+            //    //string guid = AssetDatabase.AssetPathToGUID(DataSO.ShortenPath(scenes[0].selectedScene));
+            //    //// this is just an example guid from the MyUnityScene.meta, we want to change its format to
+            //    ////                                         9fc0d401-0bbf-28b4-5940-72e72b8655ab
+            //    //if (!guid.Contains("-") && guid.Length == "9fc0d4010bbf28b4594072e72b8655ab".Length)
+            //    //{
+            //    //    guid = StringExt.InsertStringAt(guid, new int[] { 8, 12, 16, 24 }, "-");
+            //    //}
+            //    //Debug.Log(guid);
+            //    //Debug.Log(Path.Combine(Installer.innoSetupFolder, "PenseCreTemplate.iss"));
+            //    //Debug.Log(BuildConfig.DefaultFolderToBrowseInstallerScriptLocation);
+            //    //Debug.Log(Installer.DEFAULT_FILENAME_WITH_EXTENSION);
+            //    //var folderForPanel = _buildConfig.InstallerScriptLocation;// BuildConfig.DefaultInstallerScriptLocation;
+            //    //var chosenFile = EditorUtility.OpenFilePanelWithFilters("Select your installer script", folderForPanel, new string[] { Installer.DEFAULT_FILENAME_DESCRIPTION, Installer.DEFAULT_FILE_EXTENSION_WITHOUT_DOT });
+            //    //Debug.Log(chosenFile);
             //    //Debug.Log(Path.Combine(UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).resolvedPath, "Utilities~", "InnoSetupPortable", "ISCC.exe"));
 
             //    //Debug.Log(typeof(PacotePenseCreEditorWindow).Assembly.Location);
@@ -265,7 +293,7 @@ namespace PacotePenseCre.Editor
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace(); // expand horizontal space so next element is on the right side of the window
-            EditorGUILayout.LabelField("Pacote Pense & Cre v" + PacotePenseCreVersionString, GUILayout.Width(156f));
+            EditorGUILayout.LabelField("Pacote Pense & Cre v" + PacotePenseCreVersionString, GUILayout.Width(160f));
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
@@ -287,6 +315,18 @@ namespace PacotePenseCre.Editor
             populatedOptions = true;
         }
 
+        private string GuidFromAbsPath(string fullPath, bool forceFormatWithDashes = true)
+        {
+            string guid = AssetDatabase.AssetPathToGUID(DataSO.ShortenPath(fullPath));
+            // this is just an example guid from the MyUnityScene.meta, we want to change its format to
+            //                                         9fc0d401-0bbf-28b4-5940-72e72b8655ab
+            if (!guid.Contains("-") && guid.Length == "9fc0d4010bbf28b4594072e72b8655ab".Length)
+            {
+                guid = StringExt.InsertStringAt(guid, new int[] { 8, 12, 16, 24 }, "-");
+            }
+            return guid;
+        }
+
         #region Custom Build Methods
 
         private void LoadFromProject()
@@ -303,11 +343,14 @@ namespace PacotePenseCre.Editor
 
             string[] buildScenes = new string[scenes.Count];
 
+            Build.ClearLog();
+
             if (_buildConfig.OneBuildPerScene)
             {
                 for (int i = 0; i < scenes.Count; i++)
                 {
                     _buildingScene = true;
+                    string guid = GuidFromAbsPath(scenes[i].selectedScene);
                     buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
 
                     CheckForDefaults();
@@ -323,7 +366,7 @@ namespace PacotePenseCre.Editor
                         yield return new WaitForSeconds(1);
                         Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
                         yield return new WaitForSeconds(1);
-                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
                     }
                 }
             }
@@ -334,6 +377,8 @@ namespace PacotePenseCre.Editor
                 {
                     buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
                 }
+                string guid = GuidFromAbsPath(AssetDatabase.GetAssetPath(_buildConfig));
+
                 CheckForDefaults();
                 WriteBuildInfo(release);
                 BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
@@ -344,7 +389,7 @@ namespace PacotePenseCre.Editor
                 yield return new WaitForSeconds(1);
                 Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
                 yield return new WaitForSeconds(1);
-                Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
             }
             _busy = false;
             Debug.Log("[BuildProjectRoutine]: Finished");
@@ -366,6 +411,7 @@ namespace PacotePenseCre.Editor
                 {
                     _buildingScene = true;
                     buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
+                    string guid = GuidFromAbsPath(scenes[i].selectedScene);
 
                     CheckForDefaults();
                     WriteBuildInfo(release);
@@ -379,7 +425,7 @@ namespace PacotePenseCre.Editor
                     }
                     if (makeInstaller)
                     {
-                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
                         yield return new WaitForSeconds(1);
                     }
                 }
@@ -391,6 +437,8 @@ namespace PacotePenseCre.Editor
                 {
                     buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
                 }
+                string guid = GuidFromAbsPath(AssetDatabase.GetAssetPath(_buildConfig));
+
                 CheckForDefaults();
                 WriteBuildInfo(release);
                 if(archiveToZip)
@@ -400,7 +448,7 @@ namespace PacotePenseCre.Editor
                 }
                 if (makeInstaller)
                 {
-                    Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
+                    Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
                     yield return new WaitForSeconds(1);
                 }
             }
@@ -420,6 +468,8 @@ namespace PacotePenseCre.Editor
         {
             LoadBuildDataSO<BuildConfig>();
             _buildingScene = false;
+            populatedOptions = false;
+            _busy = false;
             Debug.Log("[BuildRoutineCompleted]");
         }
 
