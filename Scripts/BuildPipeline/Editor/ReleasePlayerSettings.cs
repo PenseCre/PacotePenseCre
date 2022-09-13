@@ -13,8 +13,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
         {
              new BuildSetting("runInBackground"         ,true    )
             ,new BuildSetting("visibleInBackground"     ,true    )
-            ,new BuildSetting("usePlayerLog"            ,false   )
             ,new BuildSetting("forceSingleInstance"     ,true    )
+            //,new BuildSetting("usePlayerLog"            ,false   )
             //,new BuildSetting("captureSingleScreen"     ,true    )
         };
 
