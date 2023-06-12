@@ -17,7 +17,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
     {
         public delegate void BuildCallback();
 
-        public static void RunBuild(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, BuildCallback callback)
+        public static bool RunBuild(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, BuildCallback callback)
         {
             string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
             string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
@@ -26,11 +26,12 @@ namespace PacotePenseCre.Editor.BuildPipeline
             Debug.Log(string.Format("[BUILD] [{0}] Started @ {1:MM/dd/yy hh:mm:ss}", target.ToString(), DateTime.Now));
 
             CreateBuildFolder(buildLocation, buildFile, target);
-            BuildUnityProject(buildScenes, buildInfo, buildConfig, target, options, buildLocation, buildFile);
+            bool ret = BuildUnityProject(buildScenes, buildInfo, buildConfig, target, options, buildLocation, buildFile);
 
             Debug.Log(string.Format("[BUILD] [{0}] Completed @ {1:MM/dd/yy hh:mm:ss}.", target.ToString(), DateTime.Now));
 
             callback();
+            return ret;
         }
 
         public static void Zip(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
@@ -164,18 +165,20 @@ namespace PacotePenseCre.Editor.BuildPipeline
             Debug.Log("[BUILD] Created: " + Path.GetFullPath(buildLocation));
         }
 
-        private static void BuildUnityProject(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, string buildLocation, string buildFile)
+        private static bool BuildUnityProject(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, string buildLocation, string buildFile)
         {
             SetupPlayerSettings(buildInfo, buildConfig);
             BuildReport result = UnityEditor.BuildPipeline.BuildPlayer(buildScenes, buildLocation + buildFile, target, options);
             // error logs
             if (result && result.summary.totalErrors > 0)
             {
-                Debug.LogError(result.summary);
+                Debug.LogError(result.summary.result);
+                return false;
             }
             else
             {
                 Debug.Log("[BUILD] Unity Build Successful.");
+                return true;
             }
         }
 

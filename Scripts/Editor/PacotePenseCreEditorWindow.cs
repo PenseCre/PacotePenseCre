@@ -56,15 +56,25 @@ namespace PacotePenseCre.Editor
             }
             if (string.IsNullOrEmpty(_buildConfig.InstallerScriptLocation) || !File.Exists(_buildConfig.InstallerScriptLocation))
             {
-                string defaultInstallerScriptDir = BuildConfig.DefaultFolderToBrowseInstallerScriptLocation;
-                if (!Directory.Exists(defaultInstallerScriptDir))
+                // look for iss file
+                string existingIss = FindFirstFileWithExtension(BuildConfig.BaseEditorPathProject, ".iss");
+                if (existingIss != null)
                 {
-                    Directory.CreateDirectory(defaultInstallerScriptDir);
+                    _buildConfig.InstallerScriptLocation = BuildConfig.ShortenPath(existingIss);
                 }
-                string installerScriptLocation = Path.GetFullPath(Path.Combine(defaultInstallerScriptDir, Installer.DEFAULT_FILENAME_WITH_EXTENSION));
-                Debug.Log("Created " + installerScriptLocation);
-                Installer.WriteDefault(installerScriptLocation);
-                _buildConfig.InstallerScriptLocation = BuildConfig.ShortenPath(installerScriptLocation);
+                else
+                {
+                    // create default file from template
+                    string defaultInstallerScriptDir = BuildConfig.DefaultFolderToBrowseInstallerScriptLocation;
+                    if (!Directory.Exists(defaultInstallerScriptDir))
+                    {
+                        Directory.CreateDirectory(defaultInstallerScriptDir);
+                    }
+                    string installerScriptLocation = Path.GetFullPath(Path.Combine(defaultInstallerScriptDir, Installer.DEFAULT_FILENAME_WITH_EXTENSION));
+                    Debug.Log("Created " + installerScriptLocation);
+                    Installer.WriteDefault(installerScriptLocation);
+                    _buildConfig.InstallerScriptLocation = BuildConfig.ShortenPath(installerScriptLocation);
+                }
             }
 
             if (!populatedOptions)
@@ -327,6 +337,23 @@ namespace PacotePenseCre.Editor
             return guid;
         }
 
+        /// <summary>
+        /// Returns full path of first file with the extension in given path.
+        /// </summary>
+        /// <param name="extension">with the dot</param>
+        private string FindFirstFileWithExtension(string rootPath, string extension)
+        {
+            foreach (var file in Directory.EnumerateFiles(rootPath, "*.*", SearchOption.AllDirectories))
+            {
+                if (Path.GetExtension(file).Equals(extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return file;
+                }
+            }
+
+            return null;
+        }
+
         #region Custom Build Methods
 
         private void LoadFromProject()
@@ -357,7 +384,8 @@ namespace PacotePenseCre.Editor
                     WriteBuildInfo(release);
                     BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
                     var myScene = new[] { buildScenes[i] };
-                    Build.RunBuild(myScene, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                    bool success = Build.RunBuild(myScene, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                    if (!success) yield break;
 
                     yield return new WaitUntil(() => !_buildingScene);
 
@@ -382,7 +410,8 @@ namespace PacotePenseCre.Editor
                 CheckForDefaults();
                 WriteBuildInfo(release);
                 BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                Build.RunBuild(buildScenes, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                bool success = Build.RunBuild(buildScenes, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
+                if (!success) yield break;
 
                 yield return new WaitUntil(() => !_buildingScene);
 
