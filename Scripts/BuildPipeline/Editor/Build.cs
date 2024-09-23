@@ -44,7 +44,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
+                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
                     string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
                     Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
@@ -55,7 +55,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
+                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
                 string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
                 Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
@@ -79,7 +79,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
                     string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName + ".exe");
                     Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
                     
@@ -104,7 +104,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
                 string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName + ".exe");
                 Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
