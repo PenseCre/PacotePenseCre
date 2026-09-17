@@ -6,6 +6,14 @@ using UnityEngine;
 namespace PacotePenseCre.BuildPipeline
 {
     [Serializable]
+    public class SceneSelection
+    {
+        public int selectedSceneId;
+        public string selectedScene;
+        public string toDelete;
+    }
+
+    [Serializable]
     public class BuildConfig : DataSO
     {
         public static new readonly string FileName = "buildConfig.asset";
@@ -24,9 +32,12 @@ namespace PacotePenseCre.BuildPipeline
 
         public BuildSetting[] buildSettings = null;
 
+        public List<SceneSelection> scenes = new List<SceneSelection>();
+
         public bool OneBuildPerScene;
         public bool ArchiveToZip;
         public bool MakeInstaller;
+        public bool SkipApplicationName;
         public bool Debug;
         public bool OverwriteGuid = true;
 
@@ -40,9 +51,11 @@ namespace PacotePenseCre.BuildPipeline
             get
             {
                 var ret = CreateInstance<BuildConfig>();
+                ret.scenes = new List<SceneSelection>();
                 ret.OneBuildPerScene = false;
                 ret.ArchiveToZip = true;
                 ret.MakeInstaller = false;
+                ret.SkipApplicationName = false;
                 return ret;
             }
         }

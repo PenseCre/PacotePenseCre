@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Debug = UnityEngine.Debug;
 
 using UnityEditor;
@@ -34,6 +35,210 @@ namespace PacotePenseCre.Editor.BuildPipeline
             return ret;
         }
 
+        public static void DeleteAfterBuild(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, string toDeleteString)
+        {
+            if (string.IsNullOrWhiteSpace(toDeleteString)) return;
+
+            string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
+            string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
+            if (!Directory.Exists(buildLocation)) return;
+
+            string dataFolder = Path.Combine(buildLocation, buildInfo.ApplicationName + "_Data");
+            if (!Directory.Exists(dataFolder))
+            {
+                var dataDirs = Directory.GetDirectories(buildLocation, "*_Data");
+                if (dataDirs.Length > 0)
+                {
+                    dataFolder = dataDirs[0];
+                }
+            }
+            string streamingAssetsPath = Path.Combine(dataFolder, "StreamingAssets");
+
+            var items = ParseQuotedItems(toDeleteString);
+            string streamingToken = "[StreamingAssets]";
+
+            foreach (var rawItem in items)
+            {
+                if (string.IsNullOrWhiteSpace(rawItem)) continue;
+
+                string item = rawItem.Trim();
+                bool isStreamingAssets = item.StartsWith(streamingToken, StringComparison.OrdinalIgnoreCase);
+
+                string targetDir;
+                string patternOrSubPath;
+
+                if (isStreamingAssets)
+                {
+                    string sub = item.Substring(streamingToken.Length).TrimStart('/', '\\');
+                    targetDir = streamingAssetsPath;
+                    patternOrSubPath = sub;
+                }
+                else
+                {
+                    targetDir = buildLocation;
+                    patternOrSubPath = item.TrimStart('/', '\\');
+                }
+
+                if (string.IsNullOrEmpty(patternOrSubPath))
+                {
+                    if (Directory.Exists(targetDir))
+                    {
+                        try
+                        {
+                            FileTools.MakeFilesWritable(targetDir);
+                            Directory.Delete(targetDir, true);
+                            Debug.Log(string.Format("[BUILD] Deleted directory: {0}", targetDir));
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning(string.Format("[BUILD] Failed to delete directory {0}: {1}", targetDir, ex.Message));
+                        }
+                    }
+                    continue;
+                }
+
+                string fullPath = Path.Combine(targetDir, patternOrSubPath);
+                bool hasWildcard = patternOrSubPath.Contains("[*]") || patternOrSubPath.Contains("*");
+
+                if (!hasWildcard)
+                {
+                    if (File.Exists(fullPath))
+                    {
+                        try
+                        {
+                            File.SetAttributes(fullPath, FileAttributes.Normal);
+                            File.Delete(fullPath);
+                            Debug.Log(string.Format("[BUILD] Deleted file: {0}", fullPath));
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning(string.Format("[BUILD] Failed to delete file {0}: {1}", fullPath, ex.Message));
+                        }
+                    }
+                    else if (Directory.Exists(fullPath))
+                    {
+                        try
+                        {
+                            FileTools.MakeFilesWritable(fullPath);
+                            Directory.Delete(fullPath, true);
+                            Debug.Log(string.Format("[BUILD] Deleted directory: {0}", fullPath));
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning(string.Format("[BUILD] Failed to delete directory {0}: {1}", fullPath, ex.Message));
+                        }
+                    }
+                }
+                else
+                {
+                    string searchDir = Path.GetDirectoryName(fullPath);
+                    string pattern = Path.GetFileName(fullPath);
+
+                    if (!Directory.Exists(searchDir)) continue;
+
+                    bool isBuildRoot = string.Equals(Path.GetFullPath(searchDir).TrimEnd('\\', '/'), Path.GetFullPath(buildLocation).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+
+                    foreach (string file in Directory.GetFiles(searchDir, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        string fileName = Path.GetFileName(file);
+                        if (isBuildRoot && string.Equals(fileName, buildInfo.ApplicationName + ".exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        if (MatchesWildcard(fileName, pattern))
+                        {
+                            try
+                            {
+                                File.SetAttributes(file, FileAttributes.Normal);
+                                File.Delete(file);
+                                Debug.Log(string.Format("[BUILD] Deleted file: {0}", file));
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogWarning(string.Format("[BUILD] Failed to delete file {0}: {1}", file, ex.Message));
+                            }
+                        }
+                    }
+
+                    foreach (string dir in Directory.GetDirectories(searchDir, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        string dirName = Path.GetFileName(dir);
+                        if (isBuildRoot && dirName.EndsWith("_Data", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        if (MatchesWildcard(dirName, pattern))
+                        {
+                            try
+                            {
+                                FileTools.MakeFilesWritable(dir);
+                                Directory.Delete(dir, true);
+                                Debug.Log(string.Format("[BUILD] Deleted directory: {0}", dir));
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogWarning(string.Format("[BUILD] Failed to delete directory {0}: {1}", dir, ex.Message));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public static List<string> ParseQuotedItems(string input)
+        {
+            var list = new List<string>();
+            if (string.IsNullOrWhiteSpace(input)) return list;
+
+            int firstQuote = input.IndexOf('"');
+            if (firstQuote == -1)
+            {
+                string trimmed = input.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                    list.Add(trimmed);
+                return list;
+            }
+
+            int start = -1;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (input[i] == '"')
+                {
+                    if (start == -1)
+                    {
+                        start = i + 1;
+                    }
+                    else
+                    {
+                        string item = input.Substring(start, i - start).Trim();
+                        if (!string.IsNullOrEmpty(item))
+                        {
+                            list.Add(item);
+                        }
+                        start = -1;
+                    }
+                }
+            }
+            return list;
+        }
+
+        public static bool MatchesWildcard(string input, string pattern)
+        {
+            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(pattern))
+                return false;
+
+            string normalizedPattern = pattern.Replace("[*]", "*");
+            if (!normalizedPattern.Contains("*"))
+            {
+                return string.Equals(input, normalizedPattern, StringComparison.OrdinalIgnoreCase);
+            }
+
+            string regexPattern = "^" + Regex.Escape(normalizedPattern).Replace("\\*", ".*") + "$";
+            return Regex.IsMatch(input, regexPattern, RegexOptions.IgnoreCase);
+        }
+
         public static void Zip(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
         {
             if (!buildConfig.ArchiveToZip) return;
@@ -44,7 +249,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
+                    string appName = buildConfig.SkipApplicationName ? string.Empty : buildInfo.ApplicationName.Replace(" ", string.Empty) + "_";
+                    string fileName = appName + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
                     string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
                     Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
@@ -55,7 +261,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
+                string appName = buildConfig.SkipApplicationName ? string.Empty : buildInfo.ApplicationName.Replace(" ", string.Empty) + "_";
+                string fileName = appName + "v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
                 string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
                 Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 
@@ -79,7 +286,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
                 {
                     string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
                     string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_" + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+                    string appName = buildConfig.SkipApplicationName ? string.Empty : buildInfo.ApplicationName.Replace(" ", string.Empty) + "_";
+                    string fileName = appName + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
                     string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName + ".exe");
                     Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
                     
@@ -104,7 +312,8 @@ namespace PacotePenseCre.Editor.BuildPipeline
             {
                 string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                string fileName = buildInfo.ApplicationName.Replace(" ", string.Empty) + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+                string appName = buildConfig.SkipApplicationName ? string.Empty : buildInfo.ApplicationName.Replace(" ", string.Empty) + "_";
+                string fileName = appName + "v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
                 string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName + ".exe");
                 Debug.Log(string.Format("[BUILD] [{0}] Making installer {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
 

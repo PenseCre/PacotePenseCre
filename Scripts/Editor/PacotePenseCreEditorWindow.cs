@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -28,7 +28,31 @@ namespace PacotePenseCre.Editor
 
         #region Properties
 
-        public List<SceneSelection> scenes = new List<SceneSelection>();
+        public List<SceneSelection> scenes
+        {
+            get
+            {
+                if (_buildConfig != null)
+                {
+                    if (_buildConfig.scenes == null)
+                    {
+                        _buildConfig.scenes = new List<SceneSelection>();
+                    }
+                    return _buildConfig.scenes;
+                }
+                return _fallbackScenes;
+            }
+            set
+            {
+                if (_buildConfig != null)
+                {
+                    _buildConfig.scenes = value;
+                }
+                _fallbackScenes = value;
+            }
+        }
+        private List<SceneSelection> _fallbackScenes = new List<SceneSelection>();
+
         public BuildInfo _buildInfo;
         public BuildConfig _buildConfig;
 
@@ -53,6 +77,11 @@ namespace PacotePenseCre.Editor
             if(_buildConfig == null)
             {
                 LoadBuildDataSO<BuildConfig>();
+                if (_buildConfig != null && _buildConfig.scenes == null)
+                {
+                    _buildConfig.scenes = new List<SceneSelection>();
+                }
+                SyncSceneSelections();
             }
             if (string.IsNullOrEmpty(_buildConfig.InstallerScriptLocation) || !File.Exists(_buildConfig.InstallerScriptLocation))
             {
@@ -81,6 +110,8 @@ namespace PacotePenseCre.Editor
             {
                 PopulateSceneOptions();
             }
+
+            EditorGUI.BeginChangeCheck();
 
             GUILayout.Space(20);
 
@@ -149,20 +180,50 @@ namespace PacotePenseCre.Editor
                 GUILayout.Space(leftColumnPadding);
                 EditorGUILayout.LabelField("Scene " + i.ToString(), GUILayout.Width(leftColumnWidth - leftColumnPadding - clickToRemoveWidth));
                 if (GUILayout.Button("-", GUILayout.Width(clickToRemoveWidth))) clickedToRemove.Add(i);
-                scenes[i].selectedSceneId = EditorGUILayout.Popup(sceneSelection, _sceneOptions, GUILayout.ExpandWidth(true));
-                scenes[i].selectedScene = _sceneOptions[scenes[i].selectedSceneId];
+                int newSelection = EditorGUILayout.Popup(sceneSelection, _sceneOptions, GUILayout.ExpandWidth(true));
+                if (newSelection != sceneSelection || string.IsNullOrEmpty(scenes[i].selectedScene))
+                {
+                    scenes[i].selectedSceneId = newSelection;
+                    if (_sceneOptions != null && newSelection >= 0 && newSelection < _sceneOptions.Length)
+                    {
+                        scenes[i].selectedScene = _sceneOptions[newSelection];
+                    }
+                }
                 EditorGUILayout.EndHorizontal();
+
+                bool showToDelete = _buildConfig.OneBuildPerScene || i == 0;
+                if (showToDelete)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(leftColumnPadding);
+                    EditorGUILayout.LabelField("To delete", GUILayout.Width(leftColumnWidth - leftColumnPadding));
+                    scenes[i].toDelete = EditorGUILayout.TextField(scenes[i].toDelete, GUILayout.ExpandWidth(true));
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                GUILayout.Space(5);
             }
             for (int i = clickedToRemove.Count - 1; i >= 0; i--)
             {
                 scenes.RemoveAt(clickedToRemove[i]);
+                SaveBuildConfig();
             }
 
             EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
             if (!_busy)
             {
                 if (GUILayout.Button("↻ Refresh Scenes", GUILayout.Width(leftColumnWidth))) populatedOptions = false;
-                if (GUILayout.Button("+ Add Scene", GUILayout.Width(leftColumnWidth))) scenes.Add(new SceneSelection());
+                if (GUILayout.Button("+ Add Scene", GUILayout.Width(leftColumnWidth)))
+                {
+                    var newScene = new SceneSelection();
+                    if (_sceneOptions != null && _sceneOptions.Length > 0)
+                    {
+                        newScene.selectedSceneId = 0;
+                        newScene.selectedScene = _sceneOptions[0];
+                    }
+                    scenes.Add(newScene);
+                    SaveBuildConfig();
+                }
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
@@ -177,7 +238,12 @@ namespace PacotePenseCre.Editor
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("One build per scene", GUILayout.Width(leftColumnWidth));
-            _buildConfig.OneBuildPerScene = EditorGUILayout.Toggle(_buildConfig.OneBuildPerScene);
+            _buildConfig.OneBuildPerScene = EditorGUILayout.Toggle(_buildConfig.OneBuildPerScene, GUILayout.Width(leftColumnWidth));
+            if (_buildConfig.OneBuildPerScene && (_buildConfig.ArchiveToZip || _buildConfig.MakeInstaller))
+            {
+                EditorGUILayout.LabelField("Skip application name", GUILayout.Width(leftColumnWidth + 15f));
+                _buildConfig.SkipApplicationName = EditorGUILayout.Toggle(_buildConfig.SkipApplicationName);
+            }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
@@ -307,6 +373,20 @@ namespace PacotePenseCre.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveBuildConfig();
+            }
+        }
+
+        private void SaveBuildConfig()
+        {
+            if (_buildConfig != null)
+            {
+                EditorUtility.SetDirty(_buildConfig);
+                AssetDatabase.SaveAssets();
+            }
         }
 
         private void PopulateSceneOptions()
@@ -316,13 +396,72 @@ namespace PacotePenseCre.Editor
 
             _sceneOptions = new string[sceneFiles.Length];
 
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+
             for (int i = 0; i < sceneFiles.Length; i++)
             {
-                string sceneName = sceneFiles[i].Directory + @"\" + sceneFiles[i].Name;
-                if (sceneName != null) _sceneOptions[i] = sceneName;
+                string fullPath = Path.GetFullPath(sceneFiles[i].FullName);
+                if (fullPath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    _sceneOptions[i] = fullPath.Substring(projectRoot.Length).TrimStart('\\', '/');
+                }
+                else
+                {
+                    _sceneOptions[i] = sceneFiles[i].FullName;
+                }
             }
 
+            SyncSceneSelections();
+
             populatedOptions = true;
+        }
+
+        private void SyncSceneSelections()
+        {
+            if (_sceneOptions == null || _sceneOptions.Length == 0 || scenes == null) return;
+
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                if (scenes[i] == null)
+                {
+                    scenes[i] = new SceneSelection();
+                }
+
+                if (!string.IsNullOrEmpty(scenes[i].selectedScene))
+                {
+                    string normalized = scenes[i].selectedScene;
+                    if (Path.IsPathRooted(normalized) && normalized.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
+                    {
+                        normalized = normalized.Substring(projectRoot.Length).TrimStart('\\', '/');
+                        scenes[i].selectedScene = normalized;
+                    }
+
+                    int index = Array.FindIndex(_sceneOptions, opt =>
+                        string.Equals(opt, normalized, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(opt.Replace('/', '\\'), normalized.Replace('/', '\\'), StringComparison.OrdinalIgnoreCase));
+
+                    if (index >= 0)
+                    {
+                        scenes[i].selectedSceneId = index;
+                        scenes[i].selectedScene = _sceneOptions[index];
+                    }
+                    else if (scenes[i].selectedSceneId >= _sceneOptions.Length || scenes[i].selectedSceneId < 0)
+                    {
+                        scenes[i].selectedSceneId = 0;
+                        scenes[i].selectedScene = _sceneOptions[0];
+                    }
+                }
+                else if (_sceneOptions.Length > 0)
+                {
+                    if (scenes[i].selectedSceneId < 0 || scenes[i].selectedSceneId >= _sceneOptions.Length)
+                    {
+                        scenes[i].selectedSceneId = 0;
+                    }
+                    scenes[i].selectedScene = _sceneOptions[scenes[i].selectedSceneId];
+                }
+            }
         }
 
         private string GuidFromAbsPath(string fullPath, bool forceFormatWithDashes = true)
@@ -365,6 +504,7 @@ namespace PacotePenseCre.Editor
 
         private IEnumerator BuildProjectRoutine(bool archive)
         {
+            SaveBuildConfig();
             _busy = true;
             bool release = !_buildConfig.Debug;
 
@@ -388,6 +528,8 @@ namespace PacotePenseCre.Editor
                     if (!success) yield break;
 
                     yield return new WaitUntil(() => !_buildingScene);
+
+                    Build.DeleteAfterBuild(myScene, _buildInfo, BuildTarget.StandaloneWindows64, scenes[i].toDelete);
 
                     if (archive)
                     {
@@ -415,6 +557,11 @@ namespace PacotePenseCre.Editor
 
                 yield return new WaitUntil(() => !_buildingScene);
 
+                if (scenes.Count > 0)
+                {
+                    Build.DeleteAfterBuild(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, scenes[0].toDelete);
+                }
+
                 yield return new WaitForSeconds(1);
                 Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
                 yield return new WaitForSeconds(1);
@@ -427,6 +574,7 @@ namespace PacotePenseCre.Editor
 
         public IEnumerator ArchiveOnlyRoutine()
         {
+            SaveBuildConfig();
             _busy = true;
             bool release = !_buildConfig.Debug;
             bool archiveToZip = _buildConfig.ArchiveToZip;
@@ -447,6 +595,8 @@ namespace PacotePenseCre.Editor
                     BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
                     var myScene = new[] { buildScenes[i] };
                     
+                    Build.DeleteAfterBuild(myScene, _buildInfo, BuildTarget.StandaloneWindows64, scenes[i].toDelete);
+
                     if(archiveToZip)
                     {
                         Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
@@ -470,6 +620,12 @@ namespace PacotePenseCre.Editor
 
                 CheckForDefaults();
                 WriteBuildInfo(release);
+
+                if (scenes.Count > 0)
+                {
+                    Build.DeleteAfterBuild(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, scenes[0].toDelete);
+                }
+
                 if(archiveToZip)
                 {
                     Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
@@ -597,11 +753,5 @@ namespace PacotePenseCre.Editor
             get { return UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(PacotePenseCreEditorWindow).Assembly).version; }
         }
         #endregion
-    }
-
-    public class SceneSelection
-    {
-        public int selectedSceneId { get; set; }
-        public string selectedScene { get; set; }
     }
 }
