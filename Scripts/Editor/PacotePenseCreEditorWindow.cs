@@ -61,6 +61,27 @@ namespace PacotePenseCre.Editor
 
         private bool _busy;
         private bool _buildingScene;
+        private bool _commandClicked;
+        private bool _commandWaiting;
+        private Vector2 _scrollPosition;
+
+        private void OnEnable()
+        {
+            BuildZipOperation.Changed += OnZipChanged;
+        }
+
+        private void OnDisable()
+        {
+            BuildZipOperation.Changed -= OnZipChanged;
+            BuildZipOperation.AbandonPending(this);
+            _commandWaiting = false;
+        }
+
+        private void OnZipChanged()
+        {
+            if (!BuildZipOperation.HasForegroundRequest) _commandWaiting = false;
+            Repaint();
+        }
 
         #endregion
 
@@ -70,6 +91,7 @@ namespace PacotePenseCre.Editor
 
         void OnGUI()
         {
+            _commandClicked = false;
             if (_buildInfo == null)
             {
                 LoadBuildData<BuildInfo>();
@@ -82,6 +104,11 @@ namespace PacotePenseCre.Editor
                     _buildConfig.scenes = new List<SceneSelection>();
                 }
                 SyncSceneSelections();
+            }
+            if (_buildInfo == null || _buildConfig == null)
+            {
+                EditorGUILayout.HelpBox("Build information/configuration could not be loaded.", MessageType.Error);
+                return;
             }
             if (string.IsNullOrEmpty(_buildConfig.InstallerScriptLocation) || !File.Exists(_buildConfig.InstallerScriptLocation))
             {
@@ -111,6 +138,8 @@ namespace PacotePenseCre.Editor
                 PopulateSceneOptions();
             }
 
+            DrawZipProgress();
+            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
             EditorGUI.BeginChangeCheck();
 
             GUILayout.Space(20);
@@ -287,54 +316,18 @@ namespace PacotePenseCre.Editor
 
             GUILayout.Space(20);
 
-            var canBuild = scenes != null && scenes.Count > 0;
+            var canBuild = scenes != null && scenes.Count > 0 && !_busy && !BuildZipOperation.HasForegroundRequest;
             var canArchive = canBuild && (_buildConfig.ArchiveToZip || _buildConfig.MakeInstaller);
             EditorGUILayout.LabelField("Build Commands", GUILayout.Width(leftColumnWidth));
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(leftColumnWidth * 2f));
+            EditorGUILayout.BeginHorizontal();
             GUI.enabled = canArchive;
-            if (GUILayout.Button("Archive", GUILayout.Width(leftColumnWidth)))
-            {
-                try
-                {
-                    EditorCoroutine.start(ArchiveOnlyRoutine());
-                }
-                catch (Exception e)
-                {
-                    BuildRoutineCompleted();
-                    throw e;
-                }
-            }
+            if (GUILayout.Button("Archive", GUILayout.Width(leftColumnWidth))) RequestCommand(false, true);
             GUI.enabled = canBuild;
-            if (GUILayout.Button("Build", GUILayout.Width(leftColumnWidth)))
-            {
-                try
-                {
-                    EditorCoroutine.start(BuildProjectRoutine(false));
-                }
-                catch (Exception e)
-                {
-                    BuildRoutineCompleted();
-                    throw e;
-                }
-            }
+            if (GUILayout.Button("Build", GUILayout.Width(leftColumnWidth))) RequestCommand(true, false);
             GUI.enabled = canArchive;
-            if (GUILayout.Button("Build + Archive", GUILayout.Width(leftColumnWidth)))
-            {
-                try
-                {
-                    EditorCoroutine.start(BuildProjectRoutine(true));
-                }
-                catch (Exception e)
-                {
-                    BuildRoutineCompleted();
-                    throw e;
-                }
-            }
+            if (GUILayout.Button("Build + Archive", GUILayout.Width(leftColumnWidth))) RequestCommand(true, true);
             EditorGUILayout.EndHorizontal();
-
             GUI.enabled = true;
-
-
             //if (GUILayout.Button("Test Button for Development"))
             //{
             //    ////string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(_buildConfig));
@@ -374,10 +367,11 @@ namespace PacotePenseCre.Editor
 
             EditorGUILayout.EndVertical();
 
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && !_commandClicked)
             {
                 SaveBuildConfig();
             }
+            EditorGUILayout.EndScrollView();
         }
 
         private void SaveBuildConfig()
@@ -502,181 +496,155 @@ namespace PacotePenseCre.Editor
             _buildInfo.ApplicationName = PlayerSettings.productName;
         }
 
-        private IEnumerator BuildProjectRoutine(bool archive)
+        private void RequestCommand(bool buildPlayer, bool archive)
         {
-            SaveBuildConfig();
-            _busy = true;
-            bool release = !_buildConfig.Debug;
-
-            string[] buildScenes = new string[scenes.Count];
-
-            Build.ClearLog();
-
-            if (_buildConfig.OneBuildPerScene)
+            _commandClicked = true;
+            if (!BuildZipOperation.TryClaimForeground()) return;
+            try
             {
-                for (int i = 0; i < scenes.Count; i++)
+                if (BuildZipOperation.IsActive && !EditorUtility.DisplayDialog(
+                    "ZIP in progress",
+                    "A ZIP operation is in progress. Starting a new " + (buildPlayer ? "build" : "archive") +
+                    " will cancel unfinished zipping and delete its partial ZIP. Continue?",
+                    buildPlayer ? "Cancel ZIP and Build" : "Cancel ZIP and Archive", "Keep Zipping"))
                 {
-                    _buildingScene = true;
-                    string guid = GuidFromAbsPath(scenes[i].selectedScene);
-                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
+                    BuildZipOperation.ReleaseForeground();
+                    return;
+                }
+                string configSnapshot = EditorJsonUtility.ToJson(_buildConfig);
+                string infoSnapshot = JsonUtility.ConvertToJson(_buildInfo);
+                string configGuid = GuidFromAbsPath(AssetDatabase.GetAssetPath(_buildConfig));
+                _commandWaiting = true;
+                BuildZipOperation.AfterCancellation(this, () =>
+                {
+                    _commandWaiting = false;
+                    var config = CreateInstance<BuildConfig>();
+                    try
+                    {
+                        EditorJsonUtility.FromJsonOverwrite(configSnapshot, config);
+                        config.hideFlags = HideFlags.HideAndDontSave;
+                        var info = JsonUtility.ConvertJsonToObject<BuildInfo>(infoSnapshot);
+                        _busy = true;
+                        EditorCoroutine.start(RunRequestedRoutine(buildPlayer, archive, info, config, configGuid));
+                    }
+                    catch
+                    {
+                        DestroyImmediate(config);
+                        _busy = false;
+                        throw;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _commandWaiting = false;
+                BuildZipOperation.ReleaseForeground();
+                Debug.LogError("[BUILD ZIP] Request did not start: " + ex.Message);
+            }
+        }
 
-                    CheckForDefaults();
-                    WriteBuildInfo(release);
-                    BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                    var myScene = new[] { buildScenes[i] };
-                    bool success = Build.RunBuild(myScene, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
-                    if (!success) yield break;
-
-                    yield return new WaitUntil(() => !_buildingScene);
-
-                    Build.DeleteAfterBuild(myScene, _buildInfo, BuildTarget.StandaloneWindows64, scenes[i].toDelete);
-
+        private IEnumerator RunRequestedRoutine(bool buildPlayer, bool archive, BuildInfo info, BuildConfig config, string configGuid)
+        {
+            try
+            {
+                BuildZipOperation.EnsureCanBuild();
+                SaveBuildConfig();
+                if (buildPlayer) Build.ClearLog();
+                bool release = !config.Debug;
+                if (config.scenes == null || config.scenes.Count == 0) throw new InvalidOperationException("Select at least one build scene.");
+                string[] selectedScenes = config.scenes.Select(s => s.selectedScene.Substring(s.selectedScene.LastIndexOf("Assets")).Replace(@"\", "/")).ToArray();
+                var zipRequests = new List<BuildZipRequest>();
+                int count = config.OneBuildPerScene ? selectedScenes.Length : 1;
+                for (int i = 0; i < count; i++)
+                {
+                    BuildZipOperation.EnsureCanBuild();
+                    string[] buildScenes = config.OneBuildPerScene ? new[] { selectedScenes[i] } : selectedScenes;
+                    string guid = config.OneBuildPerScene ? GuidFromAbsPath(config.scenes[i].selectedScene) : configGuid;
+                    CheckForDefaults(info);
+                    info = WriteBuildInfo(release, info);
+                    if (buildPlayer)
+                    {
+                        _buildingScene = true;
+                        BuildOptions options = release ? BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
+                        bool success = Build.RunBuild(buildScenes, info, config, BuildTarget.StandaloneWindows64, options, () => _buildingScene = false);
+                        if (!success) yield break;
+                        while (_buildingScene) yield return null;
+                    }
+                    Build.DeleteAfterBuild(buildScenes, info, BuildTarget.StandaloneWindows64, config.scenes[i].toDelete);
                     if (archive)
                     {
-                        yield return new WaitForSeconds(1);
-                        Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
-                        yield return new WaitForSeconds(1);
-                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
+                        zipRequests.AddRange(Build.CreateZipRequests(buildScenes, info, BuildTarget.StandaloneWindows64, config));
+                        Build.MakeInstaller(buildScenes, info, BuildTarget.StandaloneWindows64, config, guid);
                     }
+                    // Explicit polling/yields: the existing helper does not interpret Unity wait objects.
+                    yield return null;
                 }
+                if (zipRequests.Count > 0) BuildZipOperation.Start(zipRequests);
             }
-            else
+            finally
             {
-                _buildingScene = true;
-                for (int i = 0; i < scenes.Count; i++)
-                {
-                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
-                }
-                string guid = GuidFromAbsPath(AssetDatabase.GetAssetPath(_buildConfig));
-
-                CheckForDefaults();
-                WriteBuildInfo(release);
-                BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                bool success = Build.RunBuild(buildScenes, _buildInfo, _buildConfig, BuildTarget.StandaloneWindows64, buildOptions, BuildSceneCompleted);
-                if (!success) yield break;
-
-                yield return new WaitUntil(() => !_buildingScene);
-
-                if (scenes.Count > 0)
-                {
-                    Build.DeleteAfterBuild(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, scenes[0].toDelete);
-                }
-
-                yield return new WaitForSeconds(1);
-                Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
-                yield return new WaitForSeconds(1);
-                Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
+                DestroyImmediate(config);
+                _buildingScene = false;
+                _busy = false;
+                _commandWaiting = false;
+                BuildZipOperation.ReleaseForeground();
+                populatedOptions = false;
+                if (this != null) Repaint();
             }
-            _busy = false;
-            Debug.Log("[BuildProjectRoutine]: Finished");
-            BuildRoutineCompleted();
         }
 
+        // Preserve the existing archive-only entry point and apply the same admission guard.
         public IEnumerator ArchiveOnlyRoutine()
         {
-            SaveBuildConfig();
-            _busy = true;
-            bool release = !_buildConfig.Debug;
-            bool archiveToZip = _buildConfig.ArchiveToZip;
-            bool makeInstaller = _buildConfig.MakeInstaller;
-
-            string[] buildScenes = new string[scenes.Count];
-
-            if (_buildConfig.OneBuildPerScene)
-            {
-                for (int i = 0; i < scenes.Count; i++)
-                {
-                    _buildingScene = true;
-                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
-                    string guid = GuidFromAbsPath(scenes[i].selectedScene);
-
-                    CheckForDefaults();
-                    WriteBuildInfo(release);
-                    BuildOptions buildOptions = release ? BuildOptions.None | BuildOptions.ShowBuiltPlayer : BuildOptions.Development;
-                    var myScene = new[] { buildScenes[i] };
-                    
-                    Build.DeleteAfterBuild(myScene, _buildInfo, BuildTarget.StandaloneWindows64, scenes[i].toDelete);
-
-                    if(archiveToZip)
-                    {
-                        Build.Zip(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
-                        yield return new WaitForSeconds(1);
-                    }
-                    if (makeInstaller)
-                    {
-                        Build.MakeInstaller(myScene, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
-                        yield return new WaitForSeconds(1);
-                    }
-                }
-            }
-            else
-            {
-                _buildingScene = true;
-                for (int i = 0; i < scenes.Count; i++)
-                {
-                    buildScenes[i] = scenes[i].selectedScene.Substring(scenes[i].selectedScene.LastIndexOf("Assets")).Replace(@"\", "/");
-                }
-                string guid = GuidFromAbsPath(AssetDatabase.GetAssetPath(_buildConfig));
-
-                CheckForDefaults();
-                WriteBuildInfo(release);
-
-                if (scenes.Count > 0)
-                {
-                    Build.DeleteAfterBuild(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, scenes[0].toDelete);
-                }
-
-                if(archiveToZip)
-                {
-                    Build.Zip(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig);
-                    yield return new WaitForSeconds(1);
-                }
-                if (makeInstaller)
-                {
-                    Build.MakeInstaller(buildScenes, _buildInfo, BuildTarget.StandaloneWindows64, _buildConfig, guid);
-                    yield return new WaitForSeconds(1);
-                }
-            }
-            _busy = false;
-            Debug.Log("[ArchiveOnlyRoutine]: Finished");
-            BuildRoutineCompleted();
+            RequestCommand(false, true);
+            yield break;
         }
 
-        private void BuildSceneCompleted()
+        private void DrawZipProgress()
         {
-            LoadBuildData<BuildInfo>();
-            _buildingScene = false;
-            Debug.Log("[BuildSceneCompleted]");
+            var status = BuildZipOperation.Status;
+            if (status == null && !_commandWaiting) return;
+            GUILayout.Space(10);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            if (_commandWaiting) EditorGUILayout.LabelField("Waiting for ZIP cancellation and cleanup...");
+            if (status != null)
+            {
+                EditorGUILayout.LabelField("Build ZIP: " + status.State, EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Archive " + status.ArchiveIndex + " / " + status.ArchiveCount + ": " + status.ArchiveName, EditorStyles.wordWrappedLabel);
+                if (!string.IsNullOrEmpty(status.CurrentFile)) EditorGUILayout.LabelField(status.CurrentFile, EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField(string.Format("{0} files • {1:0.0} MiB processed • {2} archive(s) complete", status.FilesCopied, status.BytesCopied / (1024d * 1024d), status.CompletedArchives));
+                if (BuildZipOperation.IsActive)
+                {
+                    EditorGUILayout.LabelField(status.State == BuildZipState.Cancelling ? "Stopping and deleting partial ZIP..." : "Working in background...");
+                    using (new EditorGUI.DisabledScope(status.State == BuildZipState.Cancelling))
+                        if (GUILayout.Button("Cancel ZIP"))
+                        {
+                            _commandClicked = true;
+                            BuildZipOperation.Cancel();
+                        }
+                }
+                if (!string.IsNullOrEmpty(status.Error)) EditorGUILayout.HelpBox(status.Error, MessageType.Error);
+            }
+            EditorGUILayout.EndVertical();
         }
-
-        private void BuildRoutineCompleted()
-        {
-            LoadBuildDataSO<BuildConfig>();
-            _buildingScene = false;
-            populatedOptions = false;
-            _busy = false;
-            Debug.Log("[BuildRoutineCompleted]");
-        }
-
-        private void WriteBuildInfo(bool release)
+        private BuildInfo WriteBuildInfo(bool release, BuildInfo info)
         {
             BuildInfo currentBuildInfo = new BuildInfo
             {
-                CompanyName = _buildInfo.CompanyName,
-                ApplicationName = _buildInfo.ApplicationName,
-                MajorVersion = _buildInfo.MajorVersion,
-                MinorVersion = _buildInfo.MinorVersion,
-                BuildVersion = _buildInfo.BuildVersion,
-                BuildNotes = _buildInfo.BuildNotes,
+                CompanyName = info.CompanyName,
+                ApplicationName = info.ApplicationName,
+                MajorVersion = info.MajorVersion,
+                MinorVersion = info.MinorVersion,
+                BuildVersion = info.BuildVersion,
+                BuildNotes = info.BuildNotes,
                 BuildDateTime = CurrentDateString,
                 PacotePenseCreVersion = PacotePenseCreVersionString,
                 Release = release
             };
 
-            _buildInfo = currentBuildInfo;
-
             FileUtility.WriteFile(BuildInfoManager.GetFullFilePath<BuildInfo>(), JsonUtility.ConvertToJson(currentBuildInfo, Formatting.Indented));
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            return currentBuildInfo;
         }
 
         void LoadBuildData<T>() where T : BuildData
@@ -726,14 +694,14 @@ namespace PacotePenseCre.Editor
             }
         }
 
-        private void CheckForDefaults()
+        private void CheckForDefaults(BuildInfo info)
         {
-            if (_buildInfo.ApplicationName == "" || _buildInfo.ApplicationName == String.Empty || _buildInfo.ApplicationName == "DEFAULT")
+            if (info.ApplicationName == "" || info.ApplicationName == String.Empty || info.ApplicationName == "DEFAULT")
             {
                 throw new Exception("[APPLICATIONNAME] Defaults Still Set. Change Application Name");
             }
 
-            if (_buildInfo.CompanyName == "" || _buildInfo.CompanyName == String.Empty)
+            if (info.CompanyName == "" || info.CompanyName == String.Empty)
             {
                 throw new Exception("[COMPANYNAME] Defaults Still Set. Change Company Name");
             }

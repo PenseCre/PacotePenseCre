@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO.Compression;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Debug = UnityEngine.Debug;
@@ -20,6 +19,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
         public static bool RunBuild(string[] buildScenes, BuildInfo buildInfo, BuildConfig buildConfig, BuildTarget target, BuildOptions options, BuildCallback callback)
         {
+            BuildZipOperation.EnsureCanBuild();
             string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
             string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
             string buildFile = buildInfo.ApplicationName + ".exe";
@@ -37,6 +37,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
         public static void DeleteAfterBuild(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, string toDeleteString)
         {
+            BuildZipOperation.EnsureCanBuild();
             if (string.IsNullOrWhiteSpace(toDeleteString)) return;
 
             string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
@@ -239,37 +240,36 @@ namespace PacotePenseCre.Editor.BuildPipeline
             return Regex.IsMatch(input, regexPattern, RegexOptions.IgnoreCase);
         }
 
+        /// <summary>Schedules background archiving. Observe BuildZipOperation.Status for completion.</summary>
         public static void Zip(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
         {
-            if (!buildConfig.ArchiveToZip) return;
+            var requests = CreateZipRequests(buildScenes, buildInfo, target, buildConfig);
+            if (requests.Count > 0) BuildZipOperation.Start(requests);
+        }
 
-            if (buildConfig.OneBuildPerScene)
+        public static List<BuildZipRequest> CreateZipRequests(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
+        {
+            var requests = new List<BuildZipRequest>();
+            if (buildConfig == null) throw new ArgumentNullException("buildConfig");
+            if (!buildConfig.ArchiveToZip) return requests;
+            if (target != BuildTarget.StandaloneWindows64) throw new NotSupportedException("This build tool currently supports Windows 64-bit ZIP output.");
+            if (buildScenes == null || buildScenes.Length == 0 || buildInfo == null) throw new ArgumentException("ZIP creation requires scenes and build information.");
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
+            int count = buildConfig.OneBuildPerScene ? buildScenes.Length : 1;
+            for (int i = 0; i < count; i++)
             {
-                for (int i = 0; i < buildScenes.Length; i++)
-                {
-                    string sceneName = buildScenes[i].Substring(buildScenes[i].LastIndexOf(@"/") + 1).Replace(".unity", "");
-                    string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
-                    string appName = buildConfig.SkipApplicationName ? string.Empty : buildInfo.ApplicationName.Replace(" ", string.Empty) + "_";
-                    string fileName = appName + sceneName + "_v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
-                    string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
-                    Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
-
-                    ZipFile.CreateFromDirectory(buildLocation, destinationFullPath);
-                }
-            }
-            else
-            {
-                string sceneName = buildScenes[0].Substring(buildScenes[0].LastIndexOf(@"/") + 1).Replace(".unity", "");
+                string sceneName = Path.GetFileNameWithoutExtension(buildScenes[i].Replace('\\', '/'));
                 string buildLocation = GetBuildDirectory(target, sceneName, buildInfo.Release);
                 string appName = buildConfig.SkipApplicationName ? string.Empty : buildInfo.ApplicationName.Replace(" ", string.Empty) + "_";
-                string fileName = appName + "v" + buildInfo.GetVersionName + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm") + ".zip";
+                string scenePrefix = buildConfig.OneBuildPerScene ? sceneName + "_" : string.Empty;
+                string fileName = appName + scenePrefix + "v" + buildInfo.GetVersionName + "_" + timestamp + ".zip";
+                if (fileName != Path.GetFileName(fileName) || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                    throw new ArgumentException("Application/scene name cannot contain path separators or invalid filename characters.");
                 string destinationFullPath = Path.Combine(Directory.GetParent(buildLocation).Parent.Parent.Parent.FullName, fileName);
-                Debug.Log(string.Format("[BUILD] [{0}] Archiving {1} into {2}", target.ToString(), buildLocation, destinationFullPath));
-
-                ZipFile.CreateFromDirectory(buildLocation, destinationFullPath);
+                requests.Add(new BuildZipRequest(buildLocation, destinationFullPath, fileName));
             }
+            return requests;
         }
-        
         public static void PrepareInstallerScript(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig)
         {
             // .iss wip
@@ -277,6 +277,7 @@ namespace PacotePenseCre.Editor.BuildPipeline
 
         public static void MakeInstaller(string[] buildScenes, BuildInfo buildInfo, BuildTarget target, BuildConfig buildConfig, string guid)
         {
+            BuildZipOperation.EnsureCanBuild();
             if (!buildConfig.MakeInstaller) return;
             string script = BuildConfig.ExpandPath(buildConfig.InstallerScriptLocation);
 
